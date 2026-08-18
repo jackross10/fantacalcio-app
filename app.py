@@ -321,6 +321,7 @@ elif st.session_state.fase == 2:
         try:
             from streamlit_autorefresh import st_autorefresh
             if spettatore_mode:
+                load_state()
                 st_autorefresh(interval=3000, key="spettatore_refresh")
         except:
             pass
