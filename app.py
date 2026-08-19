@@ -535,7 +535,7 @@ elif st.session_state.fase == 2:
         with c_assegna:
             st.markdown("#### Modulo Rilancio")
             if not giocatore_selezionato and not df_filtrato.empty:
-                if is_admin:
+                if is_admin and not spettatore_mode:
                     st.info("👈 Clicca su un calciatore in tabella per metterlo all'asta!")
                 else:
                     st.info("⏳ In attesa che il Banditore chiami un giocatore...")
