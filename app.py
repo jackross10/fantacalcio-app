@@ -92,7 +92,12 @@ div[data-testid="stVerticalBlock"] > div { padding-bottom: 0px !important; paddi
 </style>
 """, unsafe_allow_html=True)
 
-SAVE_FILE = 'asta_salvata.json'
+def get_save_file():
+    stanza = st.session_state.get('stanza', 'pubblica').strip()
+    if not stanza: stanza = 'pubblica'
+    # Sanitize room name
+    stanza = "".join([c for c in stanza if c.isalnum() or c in ('-', '_')])
+    return f'asta_salvata_{stanza}.json'
 
 def init_state():
     if 'fase' not in st.session_state:
@@ -109,6 +114,8 @@ def init_state():
         st.session_state.df_listone = pd.DataFrame()
     if 'squadra_input' not in st.session_state:
         st.session_state.squadra_input = ""
+    if 'stanza' not in st.session_state:
+        st.session_state.stanza = "pubblica"
 
 init_state()
 
@@ -124,13 +131,13 @@ def save_state():
         'config_ruoli': st.session_state.config_ruoli,
         'listone': listone_data
     }
-    with open(SAVE_FILE, 'w', encoding='utf-8') as f:
+    with open(get_save_file(), 'w', encoding='utf-8') as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 def load_state():
-    if os.path.exists(SAVE_FILE):
+    if os.path.exists(get_save_file()):
         try:
-            with open(SAVE_FILE, 'r', encoding='utf-8') as f:
+            with open(get_save_file(), 'r', encoding='utf-8') as f:
                 state = json.load(f)
                 st.session_state.squadre = state.get('squadre', [])
                 st.session_state.assegnazioni = state.get('assegnazioni', [])
@@ -221,6 +228,10 @@ if st.session_state.fase == 1:
     st.title("⚙️ Setup & Configurazione")
     
     col_setup, col_load = st.columns([2, 1])
+    with col_setup:
+        st.session_state.stanza = st.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', 'pubblica'))
+        st.caption("Chi usa questo stesso nome condividerà la stessa asta!")
+        
     with col_load:
         st.info("Riprendere un'asta precedente?")
         if st.button("🔄 Carica Asta Salvata (Listone incluso!)", use_container_width=True):
