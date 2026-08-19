@@ -429,200 +429,200 @@ elif st.session_state.fase == 2:
             st.session_state.fase = 1
             st.rerun()
 
-        st.markdown("### 🔍 Ricerca e Chiamata")
+    st.markdown("### 🔍 Ricerca e Chiamata")
+    
+    df_listone = st.session_state.df_listone
+    assegnati_nomi = [a['giocatore'] for a in st.session_state.assegnazioni]
+    df_disponibili = df_listone[~df_listone['Nome'].isin(assegnati_nomi)].copy()
+    
+    if df_disponibili.empty:
+        st.warning("Tutti i giocatori sono stati assegnati!")
+    else:
+        st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
+        col_ricerca, col_f_p, col_f_d, col_f_c, col_f_a = st.columns([3, 1, 1, 1, 1])
+        with col_f_p: st.markdown("<span class='badge-P'>P</span>", unsafe_allow_html=True); flt_p = st.checkbox("Portieri", value=True)
+        with col_f_d: st.markdown("<span class='badge-D'>D</span>", unsafe_allow_html=True); flt_d = st.checkbox("Difensori", value=True)
+        with col_f_c: st.markdown("<span class='badge-C'>C</span>", unsafe_allow_html=True); flt_c = st.checkbox("Centrocamp", value=True)
+        with col_f_a: st.markdown("<span class='badge-A'>A</span>", unsafe_allow_html=True); flt_a = st.checkbox("Attaccanti", value=True)
         
-        df_listone = st.session_state.df_listone
-        assegnati_nomi = [a['giocatore'] for a in st.session_state.assegnazioni]
-        df_disponibili = df_listone[~df_listone['Nome'].isin(assegnati_nomi)].copy()
+        ruoli_selezionati = []
+        if flt_p: ruoli_selezionati.append('P')
+        if flt_d: ruoli_selezionati.append('D')
+        if flt_c: ruoli_selezionati.append('C')
+        if flt_a: ruoli_selezionati.append('A')
         
-        if df_disponibili.empty:
-            st.warning("Tutti i giocatori sono stati assegnati!")
-        else:
-            st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-            col_ricerca, col_f_p, col_f_d, col_f_c, col_f_a = st.columns([3, 1, 1, 1, 1])
-            with col_f_p: st.markdown("<span class='badge-P'>P</span>", unsafe_allow_html=True); flt_p = st.checkbox("Portieri", value=True)
-            with col_f_d: st.markdown("<span class='badge-D'>D</span>", unsafe_allow_html=True); flt_d = st.checkbox("Difensori", value=True)
-            with col_f_c: st.markdown("<span class='badge-C'>C</span>", unsafe_allow_html=True); flt_c = st.checkbox("Centrocamp", value=True)
-            with col_f_a: st.markdown("<span class='badge-A'>A</span>", unsafe_allow_html=True); flt_a = st.checkbox("Attaccanti", value=True)
-            
-            ruoli_selezionati = []
-            if flt_p: ruoli_selezionati.append('P')
-            if flt_d: ruoli_selezionati.append('D')
-            if flt_c: ruoli_selezionati.append('C')
-            if flt_a: ruoli_selezionati.append('A')
-            
-            with col_ricerca:
-                if st_keyup:
-                    ricerca_testo = st_keyup("Digita Nome o Squadra...", key="cerca_rapida")
-                else:
-                    ricerca_testo = st.text_input("Cerca (premi Invio per applicare)", key="cerca_rapida")
-            st.markdown("</div>", unsafe_allow_html=True)
+        with col_ricerca:
+            if st_keyup:
+                ricerca_testo = st_keyup("Digita Nome o Squadra...", key="cerca_rapida")
+            else:
+                ricerca_testo = st.text_input("Cerca (premi Invio per applicare)", key="cerca_rapida")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-            df_filtrato = df_disponibili[df_disponibili['Ruolo'].str.upper().isin(ruoli_selezionati)]
-            if ricerca_testo:
-                term = str(ricerca_testo).lower()
-                df_filtrato = df_filtrato[
-                    df_filtrato['Nome'].str.lower().str.contains(term, na=False) |
-                    df_filtrato['Squadra'].str.lower().str.contains(term, na=False)
-                ]
-                
-            cols_to_remove = ['Id', 'RM', 'Qt.I', 'Diff.', 'Qt.A M', 'Qt.I M', 'Diff.M', 'FVM M']
-            cols_to_show = [c for c in df_filtrato.columns if c not in cols_to_remove]
-            styled_df = df_filtrato[cols_to_show].style.map(colorize_role, subset=['Ruolo'])
-                
-            c_tab, c_assegna = st.columns([2, 1])
-            giocatore_selezionato = None
+        df_filtrato = df_disponibili[df_disponibili['Ruolo'].str.upper().isin(ruoli_selezionati)]
+        if ricerca_testo:
+            term = str(ricerca_testo).lower()
+            df_filtrato = df_filtrato[
+                df_filtrato['Nome'].str.lower().str.contains(term, na=False) |
+                df_filtrato['Squadra'].str.lower().str.contains(term, na=False)
+            ]
             
-            with c_tab:
-                st.write("**Clicca sulla riga del giocatore per assegnarlo!**")
-                event = st.dataframe(
-                    styled_df,
-                    hide_index=True,
-                    use_container_width=True,
-                    height=250,
-                    column_config={
-                        "Ruolo": st.column_config.TextColumn("R", width="small", help="Ruolo Classico (Portiere, Difensore, Centrocampista, Attaccante)"),
-                        "Nome": st.column_config.TextColumn("Cognome Calciatore", width="medium", help="Cognome o Nome del calciatore"),
-                        "Quotazione": st.column_config.NumberColumn("Qt.", format="%d", help="Quotazione Attuale"),
-                        "RM": st.column_config.TextColumn("RM", help="Ruolo Mantra"),
-                        "Qt.A": st.column_config.NumberColumn("Qt.A", help="Quotazione Attuale (Classic)"),
-                        "Qt.I": st.column_config.NumberColumn("Qt.I", help="Quotazione Iniziale (Classic)"),
-                        "Diff.": st.column_config.NumberColumn("Diff.", help="Differenza di Quotazione (Classic)"),
-                        "Qt.A M": st.column_config.NumberColumn("Qt.A M", help="Quotazione Attuale (Mantra)"),
-                        "Qt.I M": st.column_config.NumberColumn("Qt.I M", help="Quotazione Iniziale (Mantra)"),
-                        "Diff.M": st.column_config.NumberColumn("Diff.M", help="Differenza di Quotazione (Mantra)"),
-                        "FVM": st.column_config.NumberColumn("FVM", help="Fanta Valore di Mercato (Classic) - Prezzo stimato all'asta su 1000 crediti"),
-                        "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
-                        "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
-                    },
-                    on_select="rerun" if is_admin else "ignore",
-                    selection_mode="single-row"
-                )
-                
-                if is_admin:
-                    if len(event.selection.rows) > 0:
-                        selected_idx = event.selection.rows[0]
-                        giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
-                        if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
-                            st.session_state.giocatore_in_asta = giocatore_selezionato
-                            save_state()
-                    else:
-                        if st.session_state.get('giocatore_in_asta', '') != '':
-                            st.session_state.giocatore_in_asta = ''
-                            save_state()
+        cols_to_remove = ['Id', 'RM', 'Qt.I', 'Diff.', 'Qt.A M', 'Qt.I M', 'Diff.M', 'FVM M']
+        cols_to_show = [c for c in df_filtrato.columns if c not in cols_to_remove]
+        styled_df = df_filtrato[cols_to_show].style.map(colorize_role, subset=['Ruolo'])
+            
+        c_tab, c_assegna = st.columns([2, 1])
+        giocatore_selezionato = None
+        
+        with c_tab:
+            st.write("**Clicca sulla riga del giocatore per assegnarlo!**")
+            event = st.dataframe(
+                styled_df,
+                hide_index=True,
+                use_container_width=True,
+                height=250,
+                column_config={
+                    "Ruolo": st.column_config.TextColumn("R", width="small", help="Ruolo Classico (Portiere, Difensore, Centrocampista, Attaccante)"),
+                    "Nome": st.column_config.TextColumn("Cognome Calciatore", width="medium", help="Cognome o Nome del calciatore"),
+                    "Quotazione": st.column_config.NumberColumn("Qt.", format="%d", help="Quotazione Attuale"),
+                    "RM": st.column_config.TextColumn("RM", help="Ruolo Mantra"),
+                    "Qt.A": st.column_config.NumberColumn("Qt.A", help="Quotazione Attuale (Classic)"),
+                    "Qt.I": st.column_config.NumberColumn("Qt.I", help="Quotazione Iniziale (Classic)"),
+                    "Diff.": st.column_config.NumberColumn("Diff.", help="Differenza di Quotazione (Classic)"),
+                    "Qt.A M": st.column_config.NumberColumn("Qt.A M", help="Quotazione Attuale (Mantra)"),
+                    "Qt.I M": st.column_config.NumberColumn("Qt.I M", help="Quotazione Iniziale (Mantra)"),
+                    "Diff.M": st.column_config.NumberColumn("Diff.M", help="Differenza di Quotazione (Mantra)"),
+                    "FVM": st.column_config.NumberColumn("FVM", help="Fanta Valore di Mercato (Classic) - Prezzo stimato all'asta su 1000 crediti"),
+                    "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
+                    "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
+                },
+                on_select="rerun" if is_admin else "ignore",
+                selection_mode="single-row"
+            )
+            
+            if is_admin:
+                if len(event.selection.rows) > 0:
+                    selected_idx = event.selection.rows[0]
+                    giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
+                    if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
+                        st.session_state.giocatore_in_asta = giocatore_selezionato
+                        save_state()
                 else:
-                    giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
-                    
-            with c_assegna:
-                st.markdown("#### Modulo Rilancio")
-                if not giocatore_selezionato and not df_filtrato.empty:
-                    if is_admin:
-                        st.info("👈 Clicca su un calciatore in tabella per metterlo all'asta!")
-                    else:
-                        st.info("⏳ In attesa che il Banditore chiami un giocatore...")
+                    if st.session_state.get('giocatore_in_asta', '') != '':
+                        st.session_state.giocatore_in_asta = ''
+                        save_state()
+            else:
+                giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                 
-                if giocatore_selezionato:
-                    # In caso il giocatore sia stato filtrato via dallo schermo spettatore, cerchiamolo nel df totale
-                    riga_match = df_disponibili[df_disponibili['Nome'] == giocatore_selezionato]
-                    if not riga_match.empty:
-                        riga_g = riga_match.iloc[0]
-                        ruolo_g = str(riga_g.get('Ruolo', '')).upper()
-                        squadra_reale = riga_g.get('Squadra', '')
-                        quotazione = riga_g.get('Quotazione', '-')
-                        id_g = riga_g.get('Id', None)
-                        iniziali = giocatore_selezionato[:2].upper()
-                    else:
-                        ruolo_g, squadra_reale, quotazione, id_g, iniziali = "", "", "-", None, "XX"
-                    
-                    foto_url = ""
-                    # Logica per l'immagine:
-                    # 1. Cerca una foto locale nella cartella 'foto'
-                    foto_png_id = f"foto/{id_g}.png"
-                    foto_jpg_id = f"foto/{id_g}.jpg"
-                    foto_png_nome = f"foto/{giocatore_selezionato}.png"
-                    foto_jpg_nome = f"foto/{giocatore_selezionato}.jpg"
-                    
-                    if os.path.exists(foto_png_id):
-                        with open(foto_png_id, "rb") as f:
-                            foto_url = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
-                    elif os.path.exists(foto_jpg_id):
-                        with open(foto_jpg_id, "rb") as f:
-                            foto_url = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
-                    elif os.path.exists(foto_png_nome):
-                        with open(foto_png_nome, "rb") as f:
-                            foto_url = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
-                    elif os.path.exists(foto_jpg_nome):
-                        with open(foto_jpg_nome, "rb") as f:
-                            foto_url = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
-                    
-                    if foto_url:
-                        avatar_html = f"<img src='{foto_url}' style='width:100px; height:100px; object-fit:contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.6));'>"
-                    else:
-                        avatar_html = f"<div style='width:90px; height:90px; border-radius:12px; background:#2a2a2a; border: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:center; align-items:center; font-size:2.5rem; font-weight:900; color:#777; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);'>{iniziali}</div>"
-                    
-                    html_figurina = f"""
-                    <div style='display:flex; align-items:center; padding:15px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; margin-bottom:15px; background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(15,15,15,0.9)); box-shadow: 0 8px 20px rgba(0,0,0,0.4);'>
-                        <div style='margin-right:20px;'>{avatar_html}</div>
-                        <div style='flex-grow:1;'>
-                            <div style='font-size:1.8rem; font-weight:900; line-height:1; color:#ffffff; text-transform:uppercase; letter-spacing:-0.5px; margin-bottom:8px;'>
-                                {giocatore_selezionato}
-                            </div>
-                            <div style='display:flex; align-items:center; gap:10px;'>
-                                <span class='badge-{ruolo_g}' style='font-size:0.9rem; padding:4px 8px;'>{ruolo_g}</span>
-                                <span style='font-size:1.1rem; color:#bbb; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;'>{squadra_reale}</span>
-                            </div>
+        with c_assegna:
+            st.markdown("#### Modulo Rilancio")
+            if not giocatore_selezionato and not df_filtrato.empty:
+                if is_admin:
+                    st.info("👈 Clicca su un calciatore in tabella per metterlo all'asta!")
+                else:
+                    st.info("⏳ In attesa che il Banditore chiami un giocatore...")
+            
+            if giocatore_selezionato:
+                # In caso il giocatore sia stato filtrato via dallo schermo spettatore, cerchiamolo nel df totale
+                riga_match = df_disponibili[df_disponibili['Nome'] == giocatore_selezionato]
+                if not riga_match.empty:
+                    riga_g = riga_match.iloc[0]
+                    ruolo_g = str(riga_g.get('Ruolo', '')).upper()
+                    squadra_reale = riga_g.get('Squadra', '')
+                    quotazione = riga_g.get('Quotazione', '-')
+                    id_g = riga_g.get('Id', None)
+                    iniziali = giocatore_selezionato[:2].upper()
+                else:
+                    ruolo_g, squadra_reale, quotazione, id_g, iniziali = "", "", "-", None, "XX"
+                
+                foto_url = ""
+                # Logica per l'immagine:
+                # 1. Cerca una foto locale nella cartella 'foto'
+                foto_png_id = f"foto/{id_g}.png"
+                foto_jpg_id = f"foto/{id_g}.jpg"
+                foto_png_nome = f"foto/{giocatore_selezionato}.png"
+                foto_jpg_nome = f"foto/{giocatore_selezionato}.jpg"
+                
+                if os.path.exists(foto_png_id):
+                    with open(foto_png_id, "rb") as f:
+                        foto_url = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+                elif os.path.exists(foto_jpg_id):
+                    with open(foto_jpg_id, "rb") as f:
+                        foto_url = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                elif os.path.exists(foto_png_nome):
+                    with open(foto_png_nome, "rb") as f:
+                        foto_url = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+                elif os.path.exists(foto_jpg_nome):
+                    with open(foto_jpg_nome, "rb") as f:
+                        foto_url = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                
+                if foto_url:
+                    avatar_html = f"<img src='{foto_url}' style='width:100px; height:100px; object-fit:contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.6));'>"
+                else:
+                    avatar_html = f"<div style='width:90px; height:90px; border-radius:12px; background:#2a2a2a; border: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:center; align-items:center; font-size:2.5rem; font-weight:900; color:#777; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);'>{iniziali}</div>"
+                
+                html_figurina = f"""
+                <div style='display:flex; align-items:center; padding:15px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; margin-bottom:15px; background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(15,15,15,0.9)); box-shadow: 0 8px 20px rgba(0,0,0,0.4);'>
+                    <div style='margin-right:20px;'>{avatar_html}</div>
+                    <div style='flex-grow:1;'>
+                        <div style='font-size:1.8rem; font-weight:900; line-height:1; color:#ffffff; text-transform:uppercase; letter-spacing:-0.5px; margin-bottom:8px;'>
+                            {giocatore_selezionato}
                         </div>
-                        <div style='text-align:right; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 20px;'>
-                            <div style='font-size:0.75rem; color:#888; text-transform:uppercase; font-weight:800; letter-spacing:1px; margin-bottom:2px;'>Quotazione</div>
-                            <div style='font-size:2.2rem; font-weight:900; color:#10b981; line-height:1;'>{quotazione}</div>
+                        <div style='display:flex; align-items:center; gap:10px;'>
+                            <span class='badge-{ruolo_g}' style='font-size:0.9rem; padding:4px 8px;'>{ruolo_g}</span>
+                            <span style='font-size:1.1rem; color:#bbb; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;'>{squadra_reale}</span>
                         </div>
                     </div>
-                    """
-                    st.markdown(html_figurina, unsafe_allow_html=True)
+                    <div style='text-align:right; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 20px;'>
+                        <div style='font-size:0.75rem; color:#888; text-transform:uppercase; font-weight:800; letter-spacing:1px; margin-bottom:2px;'>Quotazione</div>
+                        <div style='font-size:2.2rem; font-weight:900; color:#10b981; line-height:1;'>{quotazione}</div>
+                    </div>
+                </div>
+                """
+                st.markdown(html_figurina, unsafe_allow_html=True)
+                
+                if is_admin:
+                    cc1, cc2 = st.columns(2)
+                    squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre)
+                    costo = cc2.number_input("Prezzo", min_value=1, value=1, step=1)
                     
-                    if is_admin:
-                        cc1, cc2 = st.columns(2)
-                        squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre)
-                        costo = cc2.number_input("Prezzo", min_value=1, value=1, step=1)
+                    if st.button("🔨 Assegna", type="primary", use_container_width=True):
+                        stats = get_stats_squadra(squadra_acquirente)
+                        limite_ruolo = st.session_state.config_ruoli.get(ruolo_g, 0)
                         
-                        if st.button("🔨 Assegna", type="primary", use_container_width=True):
-                            stats = get_stats_squadra(squadra_acquirente)
-                            limite_ruolo = st.session_state.config_ruoli.get(ruolo_g, 0)
-                            
-                            if costo > stats['max_spendibile']:
-                                st.error(f"⚠️ {squadra_acquirente} max spendibile: {stats['max_spendibile']} cr.")
-                            elif stats['ruoli'].get(ruolo_g, 0) >= limite_ruolo:
-                                st.error(f"⚠️ Slot completati per {ruolo_g}.")
-                            else:
-                                st.session_state.assegnazioni.append({
-                                    'squadra': squadra_acquirente,
-                                    'giocatore': giocatore_selezionato,
-                                    'ruolo': ruolo_g,
-                                    'costo': costo
-                                })
-                                st.session_state.giocatore_in_asta = ""
-                                save_state()
-                                st.rerun()
-                    else:
-                        st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
+                        if costo > stats['max_spendibile']:
+                            st.error(f"⚠️ {squadra_acquirente} max spendibile: {stats['max_spendibile']} cr.")
+                        elif stats['ruoli'].get(ruolo_g, 0) >= limite_ruolo:
+                            st.error(f"⚠️ Slot completati per {ruolo_g}.")
+                        else:
+                            st.session_state.assegnazioni.append({
+                                'squadra': squadra_acquirente,
+                                'giocatore': giocatore_selezionato,
+                                'ruolo': ruolo_g,
+                                'costo': costo
+                            })
+                            st.session_state.giocatore_in_asta = ""
+                            save_state()
+                            st.rerun()
+                else:
+                    st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
 
-    st.divider()
+st.divider()
+
+# --- SEZIONE INFERIORE (TABELLONE A COLONNE COMPATTO E MINIMIZZATO) ---
+st.markdown("### 📊 Tabellone Rose")
+
+num_squadre = len(st.session_state.squadre)
+# Impostiamo max 5 colonne per riga. 10 squadre = 2 righe da 5 (perfettamente leggibile).
+cols_per_row = 5 if num_squadre > 5 else max(1, num_squadre)
+
+for i in range(0, num_squadre, cols_per_row):
+    row_squadre = st.session_state.squadre[i:i+cols_per_row]
+    cols = st.columns(len(row_squadre))
     
-    # --- SEZIONE INFERIORE (TABELLONE A COLONNE COMPATTO E MINIMIZZATO) ---
-    st.markdown("### 📊 Tabellone Rose")
-    
-    num_squadre = len(st.session_state.squadre)
-    # Impostiamo max 5 colonne per riga. 10 squadre = 2 righe da 5 (perfettamente leggibile).
-    cols_per_row = 5 if num_squadre > 5 else max(1, num_squadre)
-    
-    for i in range(0, num_squadre, cols_per_row):
-        row_squadre = st.session_state.squadre[i:i+cols_per_row]
-        cols = st.columns(len(row_squadre))
-        
-        for j, sq in enumerate(row_squadre):
-            stats = get_stats_squadra(sq)
-            with cols[j]:
-                with st.container(border=True):
+    for j, sq in enumerate(row_squadre):
+        stats = get_stats_squadra(sq)
+        with cols[j]:
+            with st.container(border=True):
                     # Intestazione molto compatta, rimossi i colori forzati bianchi per compatibilità Light/Dark mode
                     st.markdown(f"<div style='font-size:1.3rem; font-weight:900; border-bottom:1px solid #555; padding-bottom:3px;'>{sq}</div>", unsafe_allow_html=True)
                     
