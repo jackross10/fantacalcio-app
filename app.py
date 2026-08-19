@@ -408,6 +408,7 @@ elif st.session_state.fase == 1:
 # FASE 2: ASTA LIVE
 # ==========================================
 elif st.session_state.fase == 2:
+    load_state()
     
     c_b1, c_b2, _ = st.columns([1, 1, 3])
     if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
@@ -435,7 +436,6 @@ elif st.session_state.fase == 2:
         try:
             from streamlit_autorefresh import st_autorefresh
             if spettatore_mode:
-                load_state()
                 st_autorefresh(interval=3000, key="spettatore_refresh")
         except:
             pass
