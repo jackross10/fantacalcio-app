@@ -115,7 +115,13 @@ def init_state():
     if 'squadra_input' not in st.session_state:
         st.session_state.squadra_input = ""
     if 'stanza' not in st.session_state:
-        st.session_state.stanza = "pubblica"
+        st.session_state.stanza = ""
+    if 'password' not in st.session_state:
+        st.session_state.password = ""
+    if 'is_admin' not in st.session_state:
+        st.session_state.is_admin = True
+    if 'setup_sbloccato' not in st.session_state:
+        st.session_state.setup_sbloccato = False
 
 init_state()
 
@@ -129,7 +135,8 @@ def save_state():
         'assegnazioni': st.session_state.assegnazioni,
         'budget_iniziale': st.session_state.budget_iniziale,
         'config_ruoli': st.session_state.config_ruoli,
-        'listone': listone_data
+        'listone': listone_data,
+        'password': st.session_state.get('password', '')
     }
     with open(get_save_file(), 'w', encoding='utf-8') as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
@@ -225,29 +232,76 @@ def modal_modifica_giocatore(nome_giocatore, costo_attuale, squadra_attuale):
 # FASE 1: SETUP
 # ==========================================
 if st.session_state.fase == 1:
-    st.title("⚙️ Setup & Configurazione")
+    st.title("⚽ Asta Fantacalcio")
     
-    col_setup, col_load = st.columns([2, 1])
-    with col_setup:
-        st.session_state.stanza = st.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', 'pubblica'))
-        st.caption("Chi usa questo stesso nome condividerà la stessa asta!")
+    st.markdown("### Accesso Stanza")
+    col_s, col_p = st.columns(2)
+    stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. AstaJack2026")
+    password = col_p.text_input("🔒 Password Admin (opzionale)", type="password", help="Inseriscila per gestire l'asta. Lasciala vuota se sei un amico e vuoi fare lo spettatore.")
+    
+    if not stanza:
+        st.warning("👈 Inserisci un nome per la stanza. I tuoi amici dovranno inserire lo stesso nome per agganciarsi alla tua asta!")
+    else:
+        st.session_state.stanza = stanza
+        file_esiste = os.path.exists(get_save_file())
         
-    with col_load:
-        st.info("Riprendere un'asta precedente?")
-        if st.button("🔄 Carica Asta Salvata (Listone incluso!)", use_container_width=True):
-            if load_state():
-                st.success("Stato e Listone precedenti caricati con successo!")
-                st.rerun()
+        is_admin = False
+        can_spectate = False
+        
+        if file_esiste:
+            try:
+                with open(get_save_file(), 'r', encoding='utf-8') as f:
+                    state_tmp = json.load(f)
+                    saved_pw = state_tmp.get('password', '')
+                    if saved_pw and password != saved_pw:
+                        st.error("Password errata. Se questa è l'asta di un tuo amico, puoi entrare come Spettatore.")
+                        can_spectate = True
+                    else:
+                        is_admin = True
+                        can_spectate = True
+            except:
+                is_admin = True
+        else:
+            is_admin = True
+            
+        col_b1, col_b2 = st.columns(2)
+        
+        if is_admin:
+            if file_esiste:
+                if col_b1.button("⚙️ Gestisci Asta Esistente", type="primary", use_container_width=True):
+                    st.session_state.is_admin = True
+                    st.session_state.password = password
+                    load_state()
+                    st.session_state.setup_sbloccato = True
+                    st.rerun()
             else:
-                st.warning("Nessun salvataggio trovato.")
-                
-        if not st.session_state.df_listone.empty:
-            if st.button("🗑️ Elimina Listone Attuale", use_container_width=True):
-                st.session_state.df_listone = pd.DataFrame()
-                save_state()
+                if col_b1.button("✨ Crea Nuova Stanza", type="primary", use_container_width=True):
+                    st.session_state.is_admin = True
+                    st.session_state.password = password
+                    st.session_state.setup_sbloccato = True
+                    st.rerun()
+                    
+        if can_spectate and file_esiste:
+            if col_b2.button("👀 Entra come Spettatore", use_container_width=True):
+                st.session_state.is_admin = False
+                st.session_state.password = ""
+                load_state()
+                st.session_state.fase = 2
                 st.rerun()
-                
-    st.header("1. Configurazione Regole")
+
+    if st.session_state.get('setup_sbloccato', False):
+        st.divider()
+        st.title("⚙️ Setup & Configurazione")
+        
+        col_setup, col_load = st.columns([2, 1])
+        with col_load:
+            if not st.session_state.df_listone.empty:
+                if st.button("🗑️ Elimina Listone Attuale", use_container_width=True):
+                    st.session_state.df_listone = pd.DataFrame()
+                    save_state()
+                    st.rerun()
+                    
+        st.header("1. Configurazione Regole")
     c1, c2, c3, c4, c5 = st.columns(5)
     st.session_state.budget_iniziale = c1.number_input("Budget", min_value=1, value=st.session_state.budget_iniziale)
     st.session_state.config_ruoli['P'] = c2.number_input("Portieri (P)", min_value=1, value=st.session_state.config_ruoli['P'])
@@ -328,7 +382,13 @@ elif st.session_state.fase == 2:
         st.title("🔴 Asta Live")
     with col_toggle:
         st.write("")
-        spettatore_mode = st.toggle("👀 Modalità Spettatore", help="Attiva questa modalità sui dispositivi degli amici. Lo schermo si aggiornerà in tempo reale ogni 3 secondi!")
+        is_admin = st.session_state.get('is_admin', True)
+        if is_admin:
+            spettatore_mode = st.toggle("👀 Modalità Spettatore", help="Nasconde i comandi per fare spazio ai tabelloni.")
+        else:
+            spettatore_mode = True
+            st.button("👀 Sei in Modalità Spettatore", disabled=True)
+            
         try:
             from streamlit_autorefresh import st_autorefresh
             if spettatore_mode:
@@ -336,8 +396,6 @@ elif st.session_state.fase == 2:
                 st_autorefresh(interval=3000, key="spettatore_refresh")
         except:
             pass
-
-
 
     def colorize_role(val):
         color = ''
@@ -347,7 +405,7 @@ elif st.session_state.fase == 2:
         elif val == 'A': color = 'color: #ef4444; font-weight: bold;'
         return color
 
-    if not spettatore_mode:
+    if not spettatore_mode and is_admin:
         if st.button("⚙️ Torna al Setup", use_container_width=True):
             st.session_state.fase = 1
             st.rerun()
