@@ -310,6 +310,11 @@ if st.session_state.fase == 0:
 # FASE 1: SETUP
 # ==========================================
 elif st.session_state.fase == 1:
+    col_back, _ = st.columns([1, 4])
+    if col_back.button("🚪 Torna alla Hall", use_container_width=True):
+        st.session_state.fase = 0
+        st.rerun()
+        
     st.title("⚙️ Setup & Configurazione")
     
     col_load, col_empty = st.columns([1, 2])
@@ -396,17 +401,27 @@ elif st.session_state.fase == 1:
 # ==========================================
 elif st.session_state.fase == 2:
     
+    c_b1, c_b2, _ = st.columns([1, 1, 3])
+    if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
+        st.session_state.fase = 0
+        st.rerun()
+        
+    is_admin = st.session_state.get('is_admin', True)
+    if is_admin:
+        if c_b2.button("⚙️ Torna al Setup", use_container_width=True):
+            st.session_state.fase = 1
+            st.rerun()
+
     col_t, col_toggle = st.columns([3, 1])
     with col_t:
         st.title("🔴 Asta Live")
     with col_toggle:
         st.write("")
-        is_admin = st.session_state.get('is_admin', True)
         if is_admin:
             spettatore_mode = st.toggle("👀 Modalità Spettatore", help="Nasconde i comandi per fare spazio ai tabelloni.")
         else:
             spettatore_mode = True
-            st.button("👀 Sei in Modalità Spettatore", disabled=True)
+            st.error("👀 **SEI IN MODALITÀ SPETTATORE**")
             
         try:
             from streamlit_autorefresh import st_autorefresh
@@ -423,11 +438,6 @@ elif st.session_state.fase == 2:
         elif val == 'C': color = 'color: #3b82f6; font-weight: bold;'
         elif val == 'A': color = 'color: #ef4444; font-weight: bold;'
         return color
-
-    if not spettatore_mode and is_admin:
-        if st.button("⚙️ Torna al Setup", use_container_width=True):
-            st.session_state.fase = 1
-            st.rerun()
 
     st.markdown("### 🔍 Ricerca e Chiamata")
     
@@ -606,58 +616,58 @@ elif st.session_state.fase == 2:
                 else:
                     st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
 
-st.divider()
-
-# --- SEZIONE INFERIORE (TABELLONE A COLONNE COMPATTO E MINIMIZZATO) ---
-st.markdown("### 📊 Tabellone Rose")
-
-num_squadre = len(st.session_state.squadre)
-# Impostiamo max 5 colonne per riga. 10 squadre = 2 righe da 5 (perfettamente leggibile).
-cols_per_row = 5 if num_squadre > 5 else max(1, num_squadre)
-
-for i in range(0, num_squadre, cols_per_row):
-    row_squadre = st.session_state.squadre[i:i+cols_per_row]
-    cols = st.columns(len(row_squadre))
+    st.divider()
     
-    for j, sq in enumerate(row_squadre):
-        stats = get_stats_squadra(sq)
-        with cols[j]:
-            with st.container(border=True):
-                    # Intestazione molto compatta, rimossi i colori forzati bianchi per compatibilità Light/Dark mode
-                    st.markdown(f"<div style='font-size:1.3rem; font-weight:900; border-bottom:1px solid #555; padding-bottom:3px;'>{sq}</div>", unsafe_allow_html=True)
-                    
-                    # Statistiche ingrandite e conteggio Ruoli esplicito
-                    st.markdown(f"""
-                    <div style='font-size:0.95rem; line-height:1.4; padding:5px 0;'>
-                        Crediti: <b>{stats['rimanente']}</b> | Rilancio: <b style='color:#10b981'>{stats['max_spendibile']}</b><br>
-                        <span style='color:#f59e0b; font-weight:bold;'>P: {stats['ruoli']['P']}/{st.session_state.config_ruoli['P']}</span> &nbsp;
-                        <span style='color:#10b981; font-weight:bold;'>D: {stats['ruoli']['D']}/{st.session_state.config_ruoli['D']}</span> &nbsp;
-                        <span style='color:#3b82f6; font-weight:bold;'>C: {stats['ruoli']['C']}/{st.session_state.config_ruoli['C']}</span> &nbsp;
-                        <span style='color:#ef4444; font-weight:bold;'>A: {stats['ruoli']['A']}/{st.session_state.config_ruoli['A']}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if not stats['assegnati']:
-                        st.caption("Nessun giocatore")
-                    else:
-                        ruoli_ordinati = ['P', 'D', 'C', 'A']
-                        first_role = True
-                        for r in ruoli_ordinati:
-                            giocatori_r = [g for g in stats['assegnati'] if g['ruolo'] == r]
-                            if giocatori_r:
-                                col_hex = get_ruolo_colore(r)
-                                m_top = "2px" if first_role else "-8px"
-                                m_bottom = "14px" if spettatore_mode else "4px"
-                                st.markdown(f"<div style='border-bottom:1px solid {col_hex}; margin-top:{m_top}; margin-bottom:{m_bottom}; font-weight:800; color:{col_hex}; font-size:0.8rem;'>{r}</div>", unsafe_allow_html=True)
-                                first_role = False
-                                
-                                # Giocatori super compatti con bottone Modal (Tasto senza freccia)
-                                for g in giocatori_r:
-                                    g_m_bottom = "10px" if spettatore_mode else "-2px"
-                                    html_g = f"<div style='margin-top:-2px; margin-bottom:{g_m_bottom}; display:flex; align-items:center; white-space:nowrap; overflow:hidden; min-height: 24px;'><span class='badge-{r}'>{r}</span> <span class='player-name-compact' style='margin-left:4px; margin-right:4px;'>{g['giocatore']}</span> <span class='player-cost-compact'>({g['costo']})</span></div>"
-                                    c1, c2 = st.columns([6, 1])
-                                    c1.markdown(html_g, unsafe_allow_html=True)
-                                    with c2:
-                                        if not spettatore_mode:
-                                            if st.button("⚙️", key=f"edit_{sq}_{g['giocatore']}", help="Modifica", type="tertiary"):
-                                                modal_modifica_giocatore(g['giocatore'], g['costo'], sq)
+    # --- SEZIONE INFERIORE (TABELLONE A COLONNE COMPATTO E MINIMIZZATO) ---
+    st.markdown("### 📊 Tabellone Rose")
+    
+    num_squadre = len(st.session_state.squadre)
+    # Impostiamo max 5 colonne per riga. 10 squadre = 2 righe da 5 (perfettamente leggibile).
+    cols_per_row = 5 if num_squadre > 5 else max(1, num_squadre)
+    
+    for i in range(0, num_squadre, cols_per_row):
+        row_squadre = st.session_state.squadre[i:i+cols_per_row]
+        cols = st.columns(len(row_squadre))
+        
+        for j, sq in enumerate(row_squadre):
+            stats = get_stats_squadra(sq)
+            with cols[j]:
+                with st.container(border=True):
+                        # Intestazione molto compatta, rimossi i colori forzati bianchi per compatibilità Light/Dark mode
+                        st.markdown(f"<div style='font-size:1.3rem; font-weight:900; border-bottom:1px solid #555; padding-bottom:3px;'>{sq}</div>", unsafe_allow_html=True)
+                        
+                        # Statistiche ingrandite e conteggio Ruoli esplicito
+                        st.markdown(f"""
+                        <div style='font-size:0.95rem; line-height:1.4; padding:5px 0;'>
+                            Crediti: <b>{stats['rimanente']}</b> | Rilancio: <b style='color:#10b981'>{stats['max_spendibile']}</b><br>
+                            <span style='color:#f59e0b; font-weight:bold;'>P: {stats['ruoli']['P']}/{st.session_state.config_ruoli['P']}</span> &nbsp;
+                            <span style='color:#10b981; font-weight:bold;'>D: {stats['ruoli']['D']}/{st.session_state.config_ruoli['D']}</span> &nbsp;
+                            <span style='color:#3b82f6; font-weight:bold;'>C: {stats['ruoli']['C']}/{st.session_state.config_ruoli['C']}</span> &nbsp;
+                            <span style='color:#ef4444; font-weight:bold;'>A: {stats['ruoli']['A']}/{st.session_state.config_ruoli['A']}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if not stats['assegnati']:
+                            st.caption("Nessun giocatore")
+                        else:
+                            ruoli_ordinati = ['P', 'D', 'C', 'A']
+                            first_role = True
+                            for r in ruoli_ordinati:
+                                giocatori_r = [g for g in stats['assegnati'] if g['ruolo'] == r]
+                                if giocatori_r:
+                                    col_hex = get_ruolo_colore(r)
+                                    m_top = "2px" if first_role else "-8px"
+                                    m_bottom = "14px" if spettatore_mode else "4px"
+                                    st.markdown(f"<div style='border-bottom:1px solid {col_hex}; margin-top:{m_top}; margin-bottom:{m_bottom}; font-weight:800; color:{col_hex}; font-size:0.8rem;'>{r}</div>", unsafe_allow_html=True)
+                                    first_role = False
+                                    
+                                    # Giocatori super compatti con bottone Modal (Tasto senza freccia)
+                                    for g in giocatori_r:
+                                        g_m_bottom = "10px" if spettatore_mode else "-2px"
+                                        html_g = f"<div style='margin-top:-2px; margin-bottom:{g_m_bottom}; display:flex; align-items:center; white-space:nowrap; overflow:hidden; min-height: 24px;'><span class='badge-{r}'>{r}</span> <span class='player-name-compact' style='margin-left:4px; margin-right:4px;'>{g['giocatore']}</span> <span class='player-cost-compact'>({g['costo']})</span></div>"
+                                        c1, c2 = st.columns([6, 1])
+                                        c1.markdown(html_g, unsafe_allow_html=True)
+                                        with c2:
+                                            if not spettatore_mode:
+                                                if st.button("⚙️", key=f"edit_{sq}_{g['giocatore']}", help="Modifica", type="tertiary"):
+                                                    modal_modifica_giocatore(g['giocatore'], g['costo'], sq)
