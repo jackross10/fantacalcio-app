@@ -22,6 +22,7 @@ th { color: #aaa; position: sticky; top: 0; background-color: #0E1117; }
 </style>
 </head>
 <body>
+<div id="debug" style="color: red; font-size: 12px; margin-bottom: 10px;"></div>
 <input type="text" id="searchInput" placeholder="🔍 Cerca calciatore o squadra (istantaneo)...">
 <div class="filters" id="roleFilters">
     <div class="pill active" data-role="TUTTI">TUTTI</div>
@@ -48,6 +49,11 @@ th { color: #aaa; position: sticky; top: 0; background-color: #0E1117; }
 </div>
 
 <script>
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    document.getElementById("debug").innerText += "ERROR: " + msg + "\n";
+    return false;
+};
+
 function sendMessageToStreamlitClient(type, data) {
     var outData = Object.assign({isStreamlitMessage: true, type: type}, data);
     window.parent.postMessage(outData, "*");
@@ -60,33 +66,38 @@ let searchTerm = "";
 let hasRenderedOnce = false;
 
 function renderTable() {
-    const tbody = document.getElementById("tableBody");
-    tbody.innerHTML = "";
-    
-    const filtered = allPlayers.filter(p => {
-        const matchesRole = currentRole === "TUTTI" || (p.Ruolo && p.Ruolo.toUpperCase() === currentRole);
-        const matchesSearch = (p.Nome && p.Nome.toLowerCase().includes(searchTerm)) || (p.Squadra && p.Squadra.toLowerCase().includes(searchTerm));
-        return matchesRole && matchesSearch;
-    });
-
-    const toRender = filtered.slice(0, 50);
-    
-    toRender.forEach(p => {
-        const tr = document.createElement("tr");
-        let btnHtml = isSpectator ? "<span style='color:#555;'>👀</span>" : `<button class="btn-chiama" onclick="selectPlayer('${p.Nome.replace(/'/g, "\\'")}')">Chiama</button>`;
+    try {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
         
-        tr.innerHTML = `
-            <td><span class="badge badge-${p.Ruolo}">${p.Ruolo}</span></td>
-            <td style="font-weight: bold; color: white;">${p.Nome}</td>
-            <td>${p.Squadra}</td>
-            <td>${p.Quotazione}</td>
-            <td>${p.FVM || '-'}</td>
-            <td>${btnHtml}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    
-    sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: document.body.scrollHeight + 50});
+        const filtered = allPlayers.filter(p => {
+            const matchesRole = currentRole === "TUTTI" || (p.Ruolo && p.Ruolo.toUpperCase() === currentRole);
+            const matchesSearch = (p.Nome && p.Nome.toLowerCase().includes(searchTerm)) || (p.Squadra && p.Squadra.toLowerCase().includes(searchTerm));
+            return matchesRole && matchesSearch;
+        });
+
+        const toRender = filtered.slice(0, 50);
+        
+        toRender.forEach(p => {
+            const tr = document.createElement("tr");
+            let safeName = p.Nome ? p.Nome.replace(/'/g, "\\'") : "";
+            let btnHtml = isSpectator ? "<span style='color:#555;'>👀</span>" : `<button class="btn-chiama" onclick="selectPlayer('${safeName}')">Chiama</button>`;
+            
+            tr.innerHTML = `
+                <td><span class="badge badge-${p.Ruolo}">${p.Ruolo}</span></td>
+                <td style="font-weight: bold; color: white;">${p.Nome}</td>
+                <td>${p.Squadra}</td>
+                <td>${p.Quotazione}</td>
+                <td>${p.FVM || '-'}</td>
+                <td>${btnHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: document.body.scrollHeight + 50});
+    } catch(e) {
+        document.getElementById("debug").innerText += "renderTable error: " + e.message + "\n";
+    }
 }
 
 function selectPlayer(nome) {
@@ -108,21 +119,25 @@ document.querySelectorAll(".pill").forEach(pill => {
 });
 
 window.addEventListener("message", function(event) {
-    if (event.data.type === "streamlit:render") {
-        allPlayers = event.data.args.players_json || [];
-        isSpectator = event.data.args.is_spectator;
-        
-        if (isSpectator) {
-            document.getElementById("thAzione").innerText = "";
-        } else {
-            document.getElementById("thAzione").innerText = "Azione";
-        }
-        
-        if (!hasRenderedOnce) {
-            renderTable();
-            hasRenderedOnce = true;
-        } else {
-            renderTable();
+    if (event.data && event.data.type === "streamlit:render") {
+        try {
+            allPlayers = event.data.args.players_json || [];
+            isSpectator = event.data.args.is_spectator;
+            
+            if (isSpectator) {
+                document.getElementById("thAzione").innerText = "";
+            } else {
+                document.getElementById("thAzione").innerText = "Azione";
+            }
+            
+            if (!hasRenderedOnce) {
+                renderTable();
+                hasRenderedOnce = true;
+            } else {
+                renderTable();
+            }
+        } catch(e) {
+            document.getElementById("debug").innerText += "onMessage error: " + e.message + "\n";
         }
     }
 });
