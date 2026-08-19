@@ -457,7 +457,7 @@ elif st.session_state.fase == 2:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
         st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
+        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="center")
         with col_ruoli:
             ruoli_selezionati = st.pills(
                 "Filtra Ruoli", 
@@ -513,11 +513,11 @@ elif st.session_state.fase == 2:
                     "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
                     "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
                 },
-                on_select="rerun" if is_admin else "ignore",
+                on_select="rerun" if (is_admin and not spettatore_mode) else "ignore",
                 selection_mode="single-row"
             )
             
-            if is_admin:
+            if is_admin and not spettatore_mode:
                 if len(event.selection.rows) > 0:
                     selected_idx = event.selection.rows[0]
                     giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
