@@ -222,17 +222,23 @@ def modal_modifica_giocatore(nome_giocatore, costo_attuale, squadra_attuale):
     new_sq = st.selectbox("Cambia Squadra", st.session_state.squadre, index=st.session_state.squadre.index(squadra_attuale))
     
     c_sv, c_rm = st.columns(2)
-    if c_sv.button("💾 Salva Modifiche", type="primary", use_container_width=True):
+    if c_sv.button("💾 Salva", type="primary", use_container_width=True):
         for a in st.session_state.assegnazioni:
             if a['giocatore'] == nome_giocatore:
                 a['costo'] = new_cost
                 a['squadra'] = new_sq
+        st.session_state.player_to_edit = None
         save_state()
         st.rerun()
         
     if c_rm.button("🗑️ Svincola", type="secondary", use_container_width=True):
         st.session_state.assegnazioni = [a for a in st.session_state.assegnazioni if a['giocatore'] != nome_giocatore]
+        st.session_state.player_to_edit = None
         save_state()
+        st.rerun()
+        
+    if st.button("❌ Chiudi", use_container_width=True):
+        st.session_state.player_to_edit = None
         st.rerun()
 
 # ==========================================
@@ -248,8 +254,8 @@ if st.session_state.fase == 0:
     """)
     
     col_s, col_p = st.columns(2)
-    stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. LegaAmici2026")
-    password = col_p.text_input("🔒 Password Admin", type="password", help="Obbligatoria per creare una nuova stanza o per gestirla come Admin.")
+    stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. PasqualeGay")
+    password = col_p.text_input("🔒 Password Admin", type="password", placeholder="es. GianroccoGay", help="Obbligatoria per creare una nuova stanza o per gestirla come Admin.")
     
     if not stanza:
         st.warning("👈 Inserisci un Nome Stanza per continuare!")
@@ -257,6 +263,7 @@ if st.session_state.fase == 0:
         st.session_state.stanza = stanza
         file_esiste = os.path.exists(get_save_file())
         
+
         is_admin = False
         can_spectate = False
         
@@ -344,7 +351,7 @@ elif st.session_state.fase == 1:
     st.session_state.config_ruoli['A'] = c5.number_input("Attaccanti (A)", min_value=1, value=st.session_state.config_ruoli['A'])
 
     st.header("2. Squadre Partecipanti")
-    st.text_input("Aggiungi Nome Squadra e premi Invio", placeholder="Es. Real Madrid", key="squadra_input", on_change=add_squadra)
+    st.text_input("Aggiungi Nome Squadra e premi Invio", placeholder="Es. CacoSbocco", key="squadra_input", on_change=add_squadra)
             
     if st.session_state.squadre:
         st.write("**Squadre aggiunte:**")
@@ -710,4 +717,9 @@ elif st.session_state.fase == 2:
                                         with c2:
                                             if not spettatore_mode:
                                                 if st.button("⚙️", key=f"edit_{sq}_{g['giocatore']}", help="Modifica", type="tertiary"):
-                                                    modal_modifica_giocatore(g['giocatore'], g['costo'], sq)
+                                                    st.session_state.player_to_edit = {'giocatore': g['giocatore'], 'costo': g['costo'], 'squadra': sq}
+                                                    st.rerun()
+
+if st.session_state.get('player_to_edit'):
+    p = st.session_state.player_to_edit
+    modal_modifica_giocatore(p['giocatore'], p['costo'], p['squadra'])
