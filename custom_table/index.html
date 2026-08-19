@@ -127,6 +127,8 @@ window.addEventListener("message", function(event) {
     }
 });
 
+// Initialize component
+sendMessageToStreamlitClient("streamlit:setComponentReady", {apiVersion: 1});
 sendMessageToStreamlitClient("setFrameHeight", {height: 500});
 </script>
 </body>
