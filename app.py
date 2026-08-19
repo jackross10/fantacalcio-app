@@ -101,7 +101,7 @@ def get_save_file():
 
 def init_state():
     if 'fase' not in st.session_state:
-        st.session_state.fase = 1
+        st.session_state.fase = 0
     if 'squadre' not in st.session_state:
         st.session_state.squadre = []
     if 'assegnazioni' not in st.session_state:
@@ -120,8 +120,6 @@ def init_state():
         st.session_state.password = ""
     if 'is_admin' not in st.session_state:
         st.session_state.is_admin = True
-    if 'setup_sbloccato' not in st.session_state:
-        st.session_state.setup_sbloccato = False
 
 init_state()
 
@@ -207,7 +205,6 @@ def get_ruolo_colore(r):
     if r == 'A': return "#ef4444"
     return "#888888"
 
-# Modale (Popup) Nativo per la Modifica Giocatore (Senza freccette)
 @st.dialog("Modifica Giocatore")
 def modal_modifica_giocatore(nome_giocatore, costo_attuale, squadra_attuale):
     st.write(f"Stai gestendo: **{nome_giocatore}**")
@@ -229,18 +226,23 @@ def modal_modifica_giocatore(nome_giocatore, costo_attuale, squadra_attuale):
         st.rerun()
 
 # ==========================================
-# FASE 1: SETUP
+# FASE 0: LOBBY & ACCESSO
 # ==========================================
-if st.session_state.fase == 1:
+if st.session_state.fase == 0:
     st.title("⚽ Asta Fantacalcio")
     
-    st.markdown("### Accesso Stanza")
+    st.info("""
+    **Benvenuto nell'Asta Live!**
+    - 👑 **Banditore (Admin):** Inventa un Nome Stanza e una Password per creare la tua asta protetta.
+    - 👀 **Spettatori:** Inserite il Nome Stanza del vostro Banditore e lasciate VUOTA la Password.
+    """)
+    
     col_s, col_p = st.columns(2)
-    stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. AstaJack2026")
-    password = col_p.text_input("🔒 Password Admin (opzionale)", type="password", help="Inseriscila per gestire l'asta. Lasciala vuota se sei un amico e vuoi fare lo spettatore.")
+    stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. LegaAmici2026")
+    password = col_p.text_input("🔒 Password Admin (opzionale)", type="password", help="Obbligatoria per gestire l'asta.")
     
     if not stanza:
-        st.warning("👈 Inserisci un nome per la stanza. I tuoi amici dovranno inserire lo stesso nome per agganciarsi alla tua asta!")
+        st.warning("👈 Inserisci un Nome Stanza per continuare!")
     else:
         st.session_state.stanza = stanza
         file_esiste = os.path.exists(get_save_file())
@@ -254,7 +256,7 @@ if st.session_state.fase == 1:
                     state_tmp = json.load(f)
                     saved_pw = state_tmp.get('password', '')
                     if saved_pw and password != saved_pw:
-                        st.error("Password errata. Se questa è l'asta di un tuo amico, puoi entrare come Spettatore.")
+                        st.error("Password errata. Se sei uno spettatore, puoi comunque guardare l'asta!")
                         can_spectate = True
                     else:
                         is_admin = True
@@ -268,17 +270,17 @@ if st.session_state.fase == 1:
         
         if is_admin:
             if file_esiste:
-                if col_b1.button("⚙️ Gestisci Asta Esistente", type="primary", use_container_width=True):
+                if col_b1.button("▶️ Entra nell'Asta (Admin)", type="primary", use_container_width=True):
                     st.session_state.is_admin = True
                     st.session_state.password = password
                     load_state()
-                    st.session_state.setup_sbloccato = True
+                    st.session_state.fase = 2
                     st.rerun()
             else:
                 if col_b1.button("✨ Crea Nuova Stanza", type="primary", use_container_width=True):
                     st.session_state.is_admin = True
                     st.session_state.password = password
-                    st.session_state.setup_sbloccato = True
+                    st.session_state.fase = 1
                     st.rerun()
                     
         if can_spectate and file_esiste:
@@ -289,19 +291,21 @@ if st.session_state.fase == 1:
                 st.session_state.fase = 2
                 st.rerun()
 
-    if st.session_state.get('setup_sbloccato', False):
-        st.divider()
-        st.title("⚙️ Setup & Configurazione")
-        
-        col_setup, col_load = st.columns([2, 1])
-        with col_load:
-            if not st.session_state.df_listone.empty:
-                if st.button("🗑️ Elimina Listone Attuale", use_container_width=True):
-                    st.session_state.df_listone = pd.DataFrame()
-                    save_state()
-                    st.rerun()
-                    
-        st.header("1. Configurazione Regole")
+# ==========================================
+# FASE 1: SETUP
+# ==========================================
+elif st.session_state.fase == 1:
+    st.title("⚙️ Setup & Configurazione")
+    
+    col_load, col_empty = st.columns([1, 2])
+    with col_load:
+        if not st.session_state.df_listone.empty:
+            if st.button("🗑️ Elimina Listone Attuale", use_container_width=True):
+                st.session_state.df_listone = pd.DataFrame()
+                save_state()
+                st.rerun()
+                
+    st.header("1. Configurazione Regole")
     c1, c2, c3, c4, c5 = st.columns(5)
     st.session_state.budget_iniziale = c1.number_input("Budget", min_value=1, value=st.session_state.budget_iniziale)
     st.session_state.config_ruoli['P'] = c2.number_input("Portieri (P)", min_value=1, value=st.session_state.config_ruoli['P'])
