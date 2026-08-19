@@ -86,11 +86,11 @@ function renderTable() {
         tbody.appendChild(tr);
     });
     
-    sendMessageToStreamlitClient("setFrameHeight", {height: document.body.scrollHeight + 50});
+    sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: document.body.scrollHeight + 50});
 }
 
 function selectPlayer(nome) {
-    sendMessageToStreamlitClient("setComponentValue", {value: nome});
+    sendMessageToStreamlitClient("streamlit:setComponentValue", {value: nome});
 }
 
 document.getElementById("searchInput").addEventListener("input", function(e) {
@@ -129,7 +129,7 @@ window.addEventListener("message", function(event) {
 
 // Initialize component
 sendMessageToStreamlitClient("streamlit:setComponentReady", {apiVersion: 1});
-sendMessageToStreamlitClient("setFrameHeight", {height: 500});
+sendMessageToStreamlitClient("streamlit:setFrameHeight", {height: 500});
 </script>
 </body>
 </html>
