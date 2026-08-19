@@ -462,8 +462,8 @@ elif st.session_state.fase == 2:
         
         # Inizializza il componente custom
         parent_dir = os.path.dirname(os.path.abspath(__file__))
-        custom_table_dir = os.path.join(parent_dir, "custom_table")
-        custom_table = components.declare_component("custom_table", path=custom_table_dir)
+        custom_table2_dir = os.path.join(parent_dir, "custom_table2")
+        custom_table2 = components.declare_component("custom_table2", path=custom_table2_dir)
         
         players_json = df_disponibili.fillna("").to_dict('records')
         c_tab, c_assegna = st.columns([2, 1])
@@ -471,7 +471,7 @@ elif st.session_state.fase == 2:
         with c_tab:
             st.write("**Usa la barra di ricerca o i filtri per trovare il giocatore**")
             # Il componente restituisce il nome del giocatore quando viene cliccato "Chiama"
-            clicked_player = custom_table(
+            clicked_player = custom_table2(
                 players_json=players_json, 
                 is_spectator=spettatore_mode or not is_admin,
                 key=f"table_{len(assegnati_nomi)}" # Forza re-render quando cambiano gli assegnati
