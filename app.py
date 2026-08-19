@@ -457,84 +457,41 @@ elif st.session_state.fase == 2:
     if df_disponibili.empty:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
-        st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
-        with col_ruoli:
-            ruoli_selezionati = st.pills(
-                "Filtra Ruoli", 
-                options=["P", "D", "C", "A"], 
-                selection_mode="multi", 
-                default=["P", "D", "C", "A"],
-                label_visibility="collapsed"
-            )
-            if not ruoli_selezionati:
-                ruoli_selezionati = []
+        import streamlit.components.v1 as components
+        import os
         
-        with col_ricerca:
-            if st_keyup:
-                ricerca_testo = st_keyup("Digita Nome o Squadra...", key="cerca_rapida")
-            else:
-                ricerca_testo = st.text_input("Cerca (premi Invio per applicare)", key="cerca_rapida")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        df_filtrato = df_disponibili[df_disponibili['Ruolo'].str.upper().isin(ruoli_selezionati)]
-        if ricerca_testo:
-            term = str(ricerca_testo).lower()
-            df_filtrato = df_filtrato[
-                df_filtrato['Nome'].str.lower().str.contains(term, na=False) |
-                df_filtrato['Squadra'].str.lower().str.contains(term, na=False)
-            ]
-            
-        cols_to_remove = ['Id', 'RM', 'Qt.I', 'Diff.', 'Qt.A M', 'Qt.I M', 'Diff.M', 'FVM M']
-        cols_to_show = [c for c in df_filtrato.columns if c not in cols_to_remove]
-        styled_df = df_filtrato[cols_to_show].style.map(colorize_role, subset=['Ruolo'])
-            
+        # Inizializza il componente custom
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        custom_table_dir = os.path.join(parent_dir, "custom_table")
+        custom_table = components.declare_component("custom_table", path=custom_table_dir)
+        
+        players_json = df_disponibili.to_dict('records')
         c_tab, c_assegna = st.columns([2, 1])
-        giocatore_selezionato = None
         
         with c_tab:
-            st.write("**Clicca sulla riga del giocatore per assegnarlo!**")
-            event = st.dataframe(
-                styled_df,
-                hide_index=True,
-                use_container_width=True,
-                height=250,
-                column_config={
-                    "Ruolo": st.column_config.TextColumn("R", width="small", help="Ruolo Classico (Portiere, Difensore, Centrocampista, Attaccante)"),
-                    "Nome": st.column_config.TextColumn("Cognome Calciatore", width="medium", help="Cognome o Nome del calciatore"),
-                    "Quotazione": st.column_config.NumberColumn("Qt.", format="%d", help="Quotazione Attuale"),
-                    "RM": st.column_config.TextColumn("RM", help="Ruolo Mantra"),
-                    "Qt.A": st.column_config.NumberColumn("Qt.A", help="Quotazione Attuale (Classic)"),
-                    "Qt.I": st.column_config.NumberColumn("Qt.I", help="Quotazione Iniziale (Classic)"),
-                    "Diff.": st.column_config.NumberColumn("Diff.", help="Differenza di Quotazione (Classic)"),
-                    "Qt.A M": st.column_config.NumberColumn("Qt.A M", help="Quotazione Attuale (Mantra)"),
-                    "Qt.I M": st.column_config.NumberColumn("Qt.I M", help="Quotazione Iniziale (Mantra)"),
-                    "Diff.M": st.column_config.NumberColumn("Diff.M", help="Differenza di Quotazione (Mantra)"),
-                    "FVM": st.column_config.NumberColumn("FVM", help="Fanta Valore di Mercato (Classic) - Prezzo stimato all'asta su 1000 crediti"),
-                    "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
-                    "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
-                },
-                on_select="rerun" if (is_admin and not spettatore_mode) else "ignore",
-                selection_mode="single-row"
+            st.write("**Usa la barra di ricerca o i filtri per trovare il giocatore**")
+            # Il componente restituisce il nome del giocatore quando viene cliccato "Chiama"
+            clicked_player = custom_table(
+                players_json=players_json, 
+                is_spectator=spettatore_mode or not is_admin,
+                key=f"table_{len(assegnati_nomi)}" # Forza re-render quando cambiano gli assegnati
             )
-            
-            if is_admin and not spettatore_mode:
-                if len(event.selection.rows) > 0:
-                    selected_idx = event.selection.rows[0]
-                    giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
-                    if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
-                        st.session_state.giocatore_in_asta = giocatore_selezionato
-                        save_state()
-                else:
-                    if st.session_state.get('giocatore_in_asta', '') != '':
-                        st.session_state.giocatore_in_asta = ''
-                        save_state()
+        
+        if is_admin and not spettatore_mode:
+            if clicked_player:
+                if st.session_state.get('giocatore_in_asta') != clicked_player:
+                    st.session_state.giocatore_in_asta = clicked_player
+                    save_state()
             else:
-                giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
+                if st.session_state.get('giocatore_in_asta', '') != '':
+                    st.session_state.giocatore_in_asta = ''
+                    save_state()
+        
+        giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                 
         with c_assegna:
             st.markdown("#### Modulo Rilancio")
-            if not giocatore_selezionato and not df_filtrato.empty:
+            if not giocatore_selezionato:
                 if is_admin:
                     st.info("👈 Clicca su un calciatore in tabella per metterlo all'asta!")
                 else:
