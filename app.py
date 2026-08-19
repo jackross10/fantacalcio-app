@@ -137,7 +137,9 @@ def save_state():
         'config_ruoli': st.session_state.config_ruoli,
         'listone': listone_data,
         'password': st.session_state.get('password', ''),
-        'giocatore_in_asta': st.session_state.get('giocatore_in_asta', '')
+        'giocatore_in_asta': st.session_state.get('giocatore_in_asta', ''),
+        'costo_in_asta': st.session_state.get('costo_in_asta', 1),
+        'squadra_in_asta': st.session_state.get('squadra_in_asta', '')
     }
     with open(get_save_file(), 'w', encoding='utf-8') as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
@@ -152,6 +154,8 @@ def load_state():
                 st.session_state.budget_iniziale = state.get('budget_iniziale', 500)
                 st.session_state.config_ruoli = state.get('config_ruoli', {'P': 3, 'D': 8, 'C': 8, 'A': 6})
                 st.session_state.giocatore_in_asta = state.get('giocatore_in_asta', '')
+                st.session_state.costo_in_asta = state.get('costo_in_asta', 1)
+                st.session_state.squadra_in_asta = state.get('squadra_in_asta', '')
                 
                 list_data = state.get('listone', [])
                 if list_data:
@@ -595,9 +599,17 @@ elif st.session_state.fase == 2:
                 st.markdown(html_figurina, unsafe_allow_html=True)
                 
                 if is_admin:
+                    def on_asta_change():
+                        st.session_state.costo_in_asta = st.session_state.get('costo_input', 1)
+                        st.session_state.squadra_in_asta = st.session_state.get('squadra_input', '')
+                        save_state()
+
                     cc1, cc2 = st.columns(2)
-                    squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre)
-                    costo = cc2.number_input("Prezzo", min_value=1, value=1, step=1)
+                    default_sq = st.session_state.get('squadra_in_asta') if st.session_state.get('squadra_in_asta') in st.session_state.squadre else (st.session_state.squadre[0] if st.session_state.squadre else None)
+                    squadra_index = st.session_state.squadre.index(default_sq) if default_sq else 0
+                    
+                    squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre, index=squadra_index, key="squadra_input", on_change=on_asta_change)
+                    costo = cc2.number_input("Prezzo", min_value=1, value=st.session_state.get('costo_in_asta', 1), step=1, key="costo_input", on_change=on_asta_change)
                     
                     if st.button("🔨 Assegna", type="primary", use_container_width=True):
                         stats = get_stats_squadra(squadra_acquirente)
@@ -615,10 +627,22 @@ elif st.session_state.fase == 2:
                                 'costo': costo
                             })
                             st.session_state.giocatore_in_asta = ""
+                            st.session_state.costo_in_asta = 1
+                            st.session_state.squadra_in_asta = ""
                             save_state()
                             st.rerun()
                 else:
                     st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
+                    curr_costo = st.session_state.get('costo_in_asta', 1)
+                    curr_sq = st.session_state.get('squadra_in_asta', '')
+                    if curr_sq:
+                        st.markdown(f"""
+                        <div style='background-color:#1e1e1e; padding:15px; border-radius:10px; border:2px solid #333; text-align:center;'>
+                            <div style='font-size:1.1rem; color:#aaa; margin-bottom:5px;'>Puntata Attuale</div>
+                            <div style='font-size:3rem; font-weight:900; color:#10b981; line-height:1;'>{curr_costo}</div>
+                            <div style='font-size:1.4rem; font-weight:700; color:#fff; margin-top:5px;'>{curr_sq}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     st.divider()
     
