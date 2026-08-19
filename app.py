@@ -120,6 +120,8 @@ def init_state():
         st.session_state.password = ""
     if 'is_admin' not in st.session_state:
         st.session_state.is_admin = True
+    if 'giocatore_in_asta' not in st.session_state:
+        st.session_state.giocatore_in_asta = ""
 
 init_state()
 
@@ -134,7 +136,8 @@ def save_state():
         'budget_iniziale': st.session_state.budget_iniziale,
         'config_ruoli': st.session_state.config_ruoli,
         'listone': listone_data,
-        'password': st.session_state.get('password', '')
+        'password': st.session_state.get('password', ''),
+        'giocatore_in_asta': st.session_state.get('giocatore_in_asta', '')
     }
     with open(get_save_file(), 'w', encoding='utf-8') as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
@@ -148,6 +151,7 @@ def load_state():
                 st.session_state.assegnazioni = state.get('assegnazioni', [])
                 st.session_state.budget_iniziale = state.get('budget_iniziale', 500)
                 st.session_state.config_ruoli = state.get('config_ruoli', {'P': 3, 'D': 8, 'C': 8, 'A': 6})
+                st.session_state.giocatore_in_asta = state.get('giocatore_in_asta', '')
                 
                 list_data = state.get('listone', [])
                 if list_data:
