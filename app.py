@@ -409,12 +409,6 @@ elif st.session_state.fase == 1:
 # ==========================================
 elif st.session_state.fase == 2:
     
-    if "calciatore" in st.query_params:
-        if st.session_state.get('is_admin', True):
-            st.session_state.giocatore_in_asta = st.query_params["calciatore"]
-            save_state()
-        st.query_params.clear()
-        
     c_b1, c_b2, _ = st.columns([1, 1, 3])
     if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
         st.session_state.fase = 0
@@ -463,135 +457,80 @@ elif st.session_state.fase == 2:
     if df_disponibili.empty:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
+        st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
+        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
+        with col_ruoli:
+            ruoli_selezionati = st.pills(
+                "Filtra Ruoli", 
+                options=["P", "D", "C", "A"], 
+                selection_mode="multi", 
+                default=["P", "D", "C", "A"],
+                label_visibility="collapsed"
+            )
+            if not ruoli_selezionati:
+                ruoli_selezionati = []
+        
+        with col_ricerca:
+            if st_keyup:
+                ricerca_testo = st_keyup("Digita Nome o Squadra...", key="cerca_rapida")
+            else:
+                ricerca_testo = st.text_input("Cerca (premi Invio per applicare)", key="cerca_rapida")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        df_filtrato = df_disponibili[df_disponibili['Ruolo'].str.upper().isin(ruoli_selezionati)]
+        if ricerca_testo:
+            term = str(ricerca_testo).lower()
+            df_filtrato = df_filtrato[
+                df_filtrato['Nome'].str.lower().str.contains(term, na=False) |
+                df_filtrato['Squadra'].str.lower().str.contains(term, na=False)
+            ]
+            
+        cols_to_remove = ['Id', 'RM', 'Qt.I', 'Diff.', 'Qt.A M', 'Qt.I M', 'Diff.M', 'FVM M']
+        cols_to_show = [c for c in df_filtrato.columns if c not in cols_to_remove]
+        styled_df = df_filtrato[cols_to_show].style.map(colorize_role, subset=['Ruolo'])
+            
         c_tab, c_assegna = st.columns([2, 1])
+        giocatore_selezionato = None
         
         with c_tab:
-            import json
-            import streamlit.components.v1 as components
+            st.write("**Clicca sulla riga del giocatore per assegnarlo!**")
+            event = st.dataframe(
+                styled_df,
+                hide_index=True,
+                use_container_width=True,
+                height=250,
+                column_config={
+                    "Ruolo": st.column_config.TextColumn("R", width="small", help="Ruolo Classico (Portiere, Difensore, Centrocampista, Attaccante)"),
+                    "Nome": st.column_config.TextColumn("Cognome Calciatore", width="medium", help="Cognome o Nome del calciatore"),
+                    "Quotazione": st.column_config.NumberColumn("Qt.", format="%d", help="Quotazione Attuale"),
+                    "RM": st.column_config.TextColumn("RM", help="Ruolo Mantra"),
+                    "Qt.A": st.column_config.NumberColumn("Qt.A", help="Quotazione Attuale (Classic)"),
+                    "Qt.I": st.column_config.NumberColumn("Qt.I", help="Quotazione Iniziale (Classic)"),
+                    "Diff.": st.column_config.NumberColumn("Diff.", help="Differenza di Quotazione (Classic)"),
+                    "Qt.A M": st.column_config.NumberColumn("Qt.A M", help="Quotazione Attuale (Mantra)"),
+                    "Qt.I M": st.column_config.NumberColumn("Qt.I M", help="Quotazione Iniziale (Mantra)"),
+                    "Diff.M": st.column_config.NumberColumn("Diff.M", help="Differenza di Quotazione (Mantra)"),
+                    "FVM": st.column_config.NumberColumn("FVM", help="Fanta Valore di Mercato (Classic) - Prezzo stimato all'asta su 1000 crediti"),
+                    "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
+                    "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
+                },
+                on_select="rerun" if (is_admin and not spettatore_mode) else "ignore",
+                selection_mode="single-row"
+            )
             
-            # Prepara il JSON per JS
-            players_json = df_disponibili.fillna("").to_dict('records')
-            players_json_str = json.dumps(players_json)
-            
-            is_spectator_str = "true" if (spettatore_mode or not is_admin) else "false"
-            
-            html_code = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; color: #E0E0E0; background-color: #0E1117; }}
-            input {{ width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #444; background: #262730; color: white; font-size: 16px; box-sizing: border-box;}}
-            input:focus {{ outline: none; border-color: #FF4B4B; }}
-            .filters {{ display: flex; gap: 10px; margin-bottom: 15px; }}
-            .pill {{ padding: 6px 12px; border-radius: 16px; cursor: pointer; background: #262730; border: 1px solid #444; user-select: none; font-weight: bold; font-size: 14px;}}
-            .pill.active {{ background: #FF4B4B; color: white; border-color: #FF4B4B; }}
-            table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
-            th, td {{ text-align: left; padding: 10px; border-bottom: 1px solid #333; }}
-            th {{ color: #aaa; position: sticky; top: 0; background-color: #0E1117; }}
-            .badge {{ padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; color: white; }}
-            .badge-P {{ background-color: #f59e0b; }}
-            .badge-D {{ background-color: #10b981; }}
-            .badge-C {{ background-color: #3b82f6; }}
-            .badge-A {{ background-color: #ef4444; }}
-            .btn-chiama {{ background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }}
-            .btn-chiama:hover {{ background-color: #059669; }}
-            .table-container {{ max-height: 400px; overflow-y: auto; }}
-            </style>
-            </head>
-            <body>
-            <input type="text" id="searchInput" placeholder="🔍 Cerca calciatore o squadra (istantaneo)...">
-            <div class="filters" id="roleFilters">
-                <div class="pill active" data-role="TUTTI">TUTTI</div>
-                <div class="pill" data-role="P">P</div>
-                <div class="pill" data-role="D">D</div>
-                <div class="pill" data-role="C">C</div>
-                <div class="pill" data-role="A">A</div>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Ruolo</th>
-                            <th>Nome</th>
-                            <th>Squadra</th>
-                            <th>Qt.</th>
-                            <th>FVM</th>
-                            <th id="thAzione">Azione</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
-                </table>
-            </div>
-
-            <script>
-            let allPlayers = {players_json_str};
-            let isSpectator = {is_spectator_str};
-            let currentRole = "TUTTI";
-            let searchTerm = "";
-
-            if (isSpectator) {{
-                document.getElementById("thAzione").innerText = "";
-            }}
-
-            function renderTable() {{
-                const tbody = document.getElementById("tableBody");
-                tbody.innerHTML = "";
-                
-                const filtered = allPlayers.filter(p => {{
-                    const matchesRole = currentRole === "TUTTI" || (p.Ruolo && p.Ruolo.toUpperCase() === currentRole);
-                    const matchesSearch = (p.Nome && p.Nome.toLowerCase().includes(searchTerm)) || (p.Squadra && p.Squadra.toLowerCase().includes(searchTerm));
-                    return matchesRole && matchesSearch;
-                }});
-
-                const toRender = filtered.slice(0, 100);
-                
-                toRender.forEach(p => {{
-                    const tr = document.createElement("tr");
-                    let safeName = p.Nome ? p.Nome.replace(/'/g, "\\\\'") : "";
-                    let btnHtml = isSpectator ? "<span style='color:#555;'>👀</span>" : `<button class="btn-chiama" onclick="selectPlayer('${{safeName}}')">Chiama</button>`;
-                    
-                    tr.innerHTML = `
-                        <td><span class="badge badge-${{p.Ruolo}}">${{p.Ruolo}}</span></td>
-                        <td style="font-weight: bold; color: white;">${{p.Nome}}</td>
-                        <td>${{p.Squadra}}</td>
-                        <td>${{p.Quotazione}}</td>
-                        <td>${{p.FVM || '-'}}</td>
-                        <td>${{btnHtml}}</td>
-                    `;
-                    tbody.appendChild(tr);
-                }});
-            }}
-
-            window.selectPlayer = function(nome) {{
-                // Modifica i query params del genitore senza rompere Streamlit
-                window.parent.location.search = '?calciatore=' + encodeURIComponent(nome);
-            }}
-
-            document.getElementById("searchInput").addEventListener("input", function(e) {{
-                searchTerm = e.target.value.toLowerCase();
-                renderTable();
-            }});
-
-            document.querySelectorAll(".pill").forEach(pill => {{
-                pill.addEventListener("click", function(e) {{
-                    document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
-                    e.target.classList.add("active");
-                    currentRole = e.target.getAttribute("data-role");
-                    renderTable();
-                }});
-            }});
-
-            renderTable();
-            </script>
-            </body>
-            </html>
-            """
-            
-            components.html(html_code, height=550)
-            
-            giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
+            if is_admin and not spettatore_mode:
+                if len(event.selection.rows) > 0:
+                    selected_idx = event.selection.rows[0]
+                    giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
+                    if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
+                        st.session_state.giocatore_in_asta = giocatore_selezionato
+                        save_state()
+                else:
+                    if st.session_state.get('giocatore_in_asta', '') != '':
+                        st.session_state.giocatore_in_asta = ''
+                        save_state()
+            else:
+                giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                 
         with c_assegna:
             st.markdown("#### Modulo Rilancio")
