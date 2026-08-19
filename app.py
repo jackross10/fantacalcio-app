@@ -520,16 +520,14 @@ elif st.session_state.fase == 2:
             if is_admin and not spettatore_mode:
                 if len(event.selection.rows) > 0:
                     selected_idx = event.selection.rows[0]
-                    giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
-                    if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
-                        st.session_state.giocatore_in_asta = giocatore_selezionato
+                    clicked_player = df_filtrato.iloc[selected_idx]['Nome']
+                    if st.session_state.get('giocatore_in_asta') != clicked_player:
+                        st.session_state.giocatore_in_asta = clicked_player
+                        st.session_state.costo_in_asta = 1
+                        st.session_state.squadra_in_asta = ""
                         save_state()
-                else:
-                    if st.session_state.get('giocatore_in_asta', '') != '':
-                        st.session_state.giocatore_in_asta = ''
-                        save_state()
-            else:
-                giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
+            
+            giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                 
         with c_assegna:
             st.markdown("#### Modulo Rilancio")
@@ -611,7 +609,8 @@ elif st.session_state.fase == 2:
                     squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre, index=squadra_index, key="squadra_input", on_change=on_asta_change)
                     costo = cc2.number_input("Prezzo", min_value=1, value=st.session_state.get('costo_in_asta', 1), step=1, key="costo_input", on_change=on_asta_change)
                     
-                    if st.button("🔨 Assegna", type="primary", use_container_width=True):
+                    c_btn1, c_btn2 = st.columns(2)
+                    if c_btn1.button("🔨 Assegna", type="primary", use_container_width=True):
                         stats = get_stats_squadra(squadra_acquirente)
                         limite_ruolo = st.session_state.config_ruoli.get(ruolo_g, 0)
                         
@@ -631,6 +630,13 @@ elif st.session_state.fase == 2:
                             st.session_state.squadra_in_asta = ""
                             save_state()
                             st.rerun()
+                    
+                    if c_btn2.button("❌ Annulla", use_container_width=True):
+                        st.session_state.giocatore_in_asta = ""
+                        st.session_state.costo_in_asta = 1
+                        st.session_state.squadra_in_asta = ""
+                        save_state()
+                        st.rerun()
                 else:
                     st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
                     curr_costo = st.session_state.get('costo_in_asta', 1)
