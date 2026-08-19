@@ -465,7 +465,7 @@ elif st.session_state.fase == 2:
         custom_table_dir = os.path.join(parent_dir, "custom_table")
         custom_table = components.declare_component("custom_table", path=custom_table_dir)
         
-        players_json = df_disponibili.to_dict('records')
+        players_json = df_disponibili.fillna("").to_dict('records')
         c_tab, c_assegna = st.columns([2, 1])
         
         with c_tab:
