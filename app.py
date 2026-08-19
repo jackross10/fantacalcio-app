@@ -457,7 +457,7 @@ elif st.session_state.fase == 2:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
         st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="center")
+        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
         with col_ruoli:
             ruoli_selezionati = st.pills(
                 "Filtra Ruoli", 
