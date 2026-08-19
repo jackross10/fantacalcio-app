@@ -457,9 +457,8 @@ elif st.session_state.fase == 2:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
         st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-        col_ricerca, col_ruoli = st.columns([1, 1])
+        col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
         with col_ruoli:
-            st.write("") # piccolo spazio per allineamento
             ruoli_selezionati = st.pills(
                 "Filtra Ruoli", 
                 options=["P", "D", "C", "A"], 
@@ -599,7 +598,7 @@ elif st.session_state.fase == 2:
                 """
                 st.markdown(html_figurina, unsafe_allow_html=True)
                 
-                if is_admin:
+                if is_admin and not spettatore_mode:
                     def on_asta_change():
                         st.session_state.costo_in_asta = st.session_state.get('costo_input', 1)
                         st.session_state.squadra_in_asta = st.session_state.get('squadra_input', '')
@@ -635,15 +634,12 @@ elif st.session_state.fase == 2:
                 else:
                     st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
                     curr_costo = st.session_state.get('costo_in_asta', 1)
-                    curr_sq = st.session_state.get('squadra_in_asta', '')
-                    if curr_sq:
-                        st.markdown(f"""
-                        <div style='background-color:#1e1e1e; padding:15px; border-radius:10px; border:2px solid #333; text-align:center;'>
-                            <div style='font-size:1.1rem; color:#aaa; margin-bottom:5px;'>Puntata Attuale</div>
-                            <div style='font-size:3rem; font-weight:900; color:#10b981; line-height:1;'>{curr_costo}</div>
-                            <div style='font-size:1.4rem; font-weight:700; color:#fff; margin-top:5px;'>{curr_sq}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style='background-color:#1e1e1e; padding:15px; border-radius:10px; border:2px solid #333; text-align:center;'>
+                        <div style='font-size:1.1rem; color:#aaa; margin-bottom:5px;'>Puntata Attuale</div>
+                        <div style='font-size:3rem; font-weight:900; color:#10b981; line-height:1;'>{curr_costo}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     st.divider()
     
