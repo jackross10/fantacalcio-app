@@ -239,7 +239,7 @@ if st.session_state.fase == 0:
     
     col_s, col_p = st.columns(2)
     stanza = col_s.text_input("🔑 Nome Stanza", value=st.session_state.get('stanza', ''), placeholder="es. LegaAmici2026")
-    password = col_p.text_input("🔒 Password Admin (opzionale)", type="password", help="Obbligatoria per gestire l'asta.")
+    password = col_p.text_input("🔒 Password Admin", type="password", help="Obbligatoria per creare una nuova stanza o per gestirla come Admin.")
     
     if not stanza:
         st.warning("👈 Inserisci un Nome Stanza per continuare!")
@@ -264,7 +264,12 @@ if st.session_state.fase == 0:
             except:
                 is_admin = True
         else:
-            is_admin = True
+            # La stanza non esiste. Deve esserci per forza una password.
+            if not password:
+                st.warning("⚠️ Per creare una nuova stanza devi obbligatoriamente inserire una Password!")
+                is_admin = False
+            else:
+                is_admin = True
             
         col_b1, col_b2 = st.columns(2)
         
