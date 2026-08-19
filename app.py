@@ -422,7 +422,8 @@ elif st.session_state.fase == 2:
 
     col_t, col_toggle = st.columns([3, 1])
     with col_t:
-        st.title("🔴 Asta Live")
+        stanza_corrente = st.session_state.get('stanza', 'Stanza')
+        st.title(f"🔴 Asta Live - {stanza_corrente}")
     with col_toggle:
         st.write("")
         if is_admin:
