@@ -495,26 +495,44 @@ elif st.session_state.fase == 2:
                         "FVM M": st.column_config.NumberColumn("FVM M", help="Fanta Valore di Mercato (Mantra) - Prezzo stimato all'asta su 1000 crediti"),
                         "Squadra": st.column_config.TextColumn("Squadra", help="Squadra in cui gioca attualmente il calciatore")
                     },
-                    on_select="rerun",
+                    on_select="rerun" if is_admin else "ignore",
                     selection_mode="single-row"
                 )
                 
-                if len(event.selection.rows) > 0:
-                    selected_idx = event.selection.rows[0]
-                    giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
+                if is_admin:
+                    if len(event.selection.rows) > 0:
+                        selected_idx = event.selection.rows[0]
+                        giocatore_selezionato = df_filtrato.iloc[selected_idx]['Nome']
+                        if st.session_state.get('giocatore_in_asta') != giocatore_selezionato:
+                            st.session_state.giocatore_in_asta = giocatore_selezionato
+                            save_state()
+                    else:
+                        if st.session_state.get('giocatore_in_asta', '') != '':
+                            st.session_state.giocatore_in_asta = ''
+                            save_state()
+                else:
+                    giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                     
             with c_assegna:
                 st.markdown("#### Modulo Rilancio")
                 if not giocatore_selezionato and not df_filtrato.empty:
-                    st.info("👈 Clicca su un calciatore in tabella!")
+                    if is_admin:
+                        st.info("👈 Clicca su un calciatore in tabella per metterlo all'asta!")
+                    else:
+                        st.info("⏳ In attesa che il Banditore chiami un giocatore...")
                 
                 if giocatore_selezionato:
-                    riga_g = df_filtrato[df_filtrato['Nome'] == giocatore_selezionato].iloc[0]
-                    ruolo_g = str(riga_g.get('Ruolo', '')).upper()
-                    squadra_reale = riga_g.get('Squadra', '')
-                    quotazione = riga_g.get('Quotazione', '-')
-                    id_g = riga_g.get('Id', None)
-                    iniziali = giocatore_selezionato[:2].upper()
+                    # In caso il giocatore sia stato filtrato via dallo schermo spettatore, cerchiamolo nel df totale
+                    riga_match = df_disponibili[df_disponibili['Nome'] == giocatore_selezionato]
+                    if not riga_match.empty:
+                        riga_g = riga_match.iloc[0]
+                        ruolo_g = str(riga_g.get('Ruolo', '')).upper()
+                        squadra_reale = riga_g.get('Squadra', '')
+                        quotazione = riga_g.get('Quotazione', '-')
+                        id_g = riga_g.get('Id', None)
+                        iniziali = giocatore_selezionato[:2].upper()
+                    else:
+                        ruolo_g, squadra_reale, quotazione, id_g, iniziali = "", "", "-", None, "XX"
                     
                     foto_url = ""
                     # Logica per l'immagine:
@@ -562,27 +580,31 @@ elif st.session_state.fase == 2:
                     """
                     st.markdown(html_figurina, unsafe_allow_html=True)
                     
-                    cc1, cc2 = st.columns(2)
-                    squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre)
-                    costo = cc2.number_input("Prezzo", min_value=1, value=1, step=1)
-                    
-                    if st.button("🔨 Assegna", type="primary", use_container_width=True):
-                        stats = get_stats_squadra(squadra_acquirente)
-                        limite_ruolo = st.session_state.config_ruoli.get(ruolo_g, 0)
+                    if is_admin:
+                        cc1, cc2 = st.columns(2)
+                        squadra_acquirente = cc1.selectbox("Acquirente", st.session_state.squadre)
+                        costo = cc2.number_input("Prezzo", min_value=1, value=1, step=1)
                         
-                        if costo > stats['max_spendibile']:
-                            st.error(f"⚠️ {squadra_acquirente} max spendibile: {stats['max_spendibile']} cr.")
-                        elif stats['ruoli'].get(ruolo_g, 0) >= limite_ruolo:
-                            st.error(f"⚠️ Slot completati per {ruolo_g}.")
-                        else:
-                            st.session_state.assegnazioni.append({
-                                'squadra': squadra_acquirente,
-                                'giocatore': giocatore_selezionato,
-                                'ruolo': ruolo_g,
-                                'costo': costo
-                            })
-                            save_state()
-                            st.rerun()
+                        if st.button("🔨 Assegna", type="primary", use_container_width=True):
+                            stats = get_stats_squadra(squadra_acquirente)
+                            limite_ruolo = st.session_state.config_ruoli.get(ruolo_g, 0)
+                            
+                            if costo > stats['max_spendibile']:
+                                st.error(f"⚠️ {squadra_acquirente} max spendibile: {stats['max_spendibile']} cr.")
+                            elif stats['ruoli'].get(ruolo_g, 0) >= limite_ruolo:
+                                st.error(f"⚠️ Slot completati per {ruolo_g}.")
+                            else:
+                                st.session_state.assegnazioni.append({
+                                    'squadra': squadra_acquirente,
+                                    'giocatore': giocatore_selezionato,
+                                    'ruolo': ruolo_g,
+                                    'costo': costo
+                                })
+                                st.session_state.giocatore_in_asta = ""
+                                save_state()
+                                st.rerun()
+                    else:
+                        st.info("👀 Stai guardando. Solo il Banditore può assegnare il giocatore.")
 
     st.divider()
     
