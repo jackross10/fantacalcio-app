@@ -155,7 +155,9 @@ def load_state():
                 st.session_state.config_ruoli = state.get('config_ruoli', {'P': 3, 'D': 8, 'C': 8, 'A': 6})
                 st.session_state.giocatore_in_asta = state.get('giocatore_in_asta', '')
                 st.session_state.costo_in_asta = state.get('costo_in_asta', 1)
+                st.session_state.costo_input = st.session_state.costo_in_asta
                 st.session_state.squadra_in_asta = state.get('squadra_in_asta', '')
+                st.session_state.squadra_input = st.session_state.squadra_in_asta
                 
                 list_data = state.get('listone', [])
                 if list_data:
@@ -521,11 +523,17 @@ elif st.session_state.fase == 2:
                 if len(event.selection.rows) > 0:
                     selected_idx = event.selection.rows[0]
                     clicked_player = df_filtrato.iloc[selected_idx]['Nome']
-                    if st.session_state.get('giocatore_in_asta') != clicked_player:
+                    # Only trigger an update if the admin actually clicked a DIFFERENT player than what they clicked last time
+                    if st.session_state.get('local_last_selected') != clicked_player:
+                        st.session_state.local_last_selected = clicked_player
                         st.session_state.giocatore_in_asta = clicked_player
                         st.session_state.costo_in_asta = 1
                         st.session_state.squadra_in_asta = ""
+                        st.session_state.costo_input = 1
+                        st.session_state.squadra_input = ""
                         save_state()
+                else:
+                    st.session_state.local_last_selected = ""
             
             giocatore_selezionato = st.session_state.get('giocatore_in_asta', '')
                 
@@ -635,6 +643,7 @@ elif st.session_state.fase == 2:
                         st.session_state.giocatore_in_asta = ""
                         st.session_state.costo_in_asta = 1
                         st.session_state.squadra_in_asta = ""
+                        st.session_state.local_last_selected = ""
                         save_state()
                         st.rerun()
                 else:
