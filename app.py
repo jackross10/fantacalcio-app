@@ -457,17 +457,18 @@ elif st.session_state.fase == 2:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
         st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
-        col_ricerca, col_f_p, col_f_d, col_f_c, col_f_a = st.columns([3, 1, 1, 1, 1])
-        with col_f_p: st.markdown("<span class='badge-P'>P</span>", unsafe_allow_html=True); flt_p = st.checkbox("Portieri", value=True)
-        with col_f_d: st.markdown("<span class='badge-D'>D</span>", unsafe_allow_html=True); flt_d = st.checkbox("Difensori", value=True)
-        with col_f_c: st.markdown("<span class='badge-C'>C</span>", unsafe_allow_html=True); flt_c = st.checkbox("Centrocamp", value=True)
-        with col_f_a: st.markdown("<span class='badge-A'>A</span>", unsafe_allow_html=True); flt_a = st.checkbox("Attaccanti", value=True)
-        
-        ruoli_selezionati = []
-        if flt_p: ruoli_selezionati.append('P')
-        if flt_d: ruoli_selezionati.append('D')
-        if flt_c: ruoli_selezionati.append('C')
-        if flt_a: ruoli_selezionati.append('A')
+        col_ricerca, col_ruoli = st.columns([1, 1])
+        with col_ruoli:
+            st.write("") # piccolo spazio per allineamento
+            ruoli_selezionati = st.pills(
+                "Filtra Ruoli", 
+                options=["P", "D", "C", "A"], 
+                selection_mode="multi", 
+                default=["P", "D", "C", "A"],
+                label_visibility="collapsed"
+            )
+            if not ruoli_selezionati:
+                ruoli_selezionati = []
         
         with col_ricerca:
             if st_keyup:
