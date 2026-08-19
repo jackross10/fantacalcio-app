@@ -291,6 +291,16 @@ if st.session_state.fase == 0:
                 st.session_state.fase = 2
                 st.rerun()
 
+    st.divider()
+    import glob
+    stanze_files = glob.glob("asta_salvata_*.json")
+    if stanze_files:
+        stanze_names = [f.replace("asta_salvata_", "").replace(".json", "") for f in stanze_files]
+        st.caption("🟢 **Stanze attualmente attive sul server:**")
+        st.caption(", ".join(stanze_names))
+    else:
+        st.caption("Nessuna stanza attiva al momento.")
+
 # ==========================================
 # FASE 1: SETUP
 # ==========================================
