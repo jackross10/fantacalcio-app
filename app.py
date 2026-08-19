@@ -30,7 +30,6 @@ def sincronizza_foto_listone(df):
         nome = str(row.get('Nome', 'Sconosciuto')).strip()
         
         if not id_str or id_str == 'nan': continue
-        try: clean_id = int(float(id_str))
         except: continue
         
         # Saltiamo se c'è l'immagine o se sappiamo già che Fantacalcio non la possiede (.missing)
@@ -47,7 +46,6 @@ def sincronizza_foto_listone(df):
         scaricato = False
         for var in variants:
             url = f"https://content.fantacalcio.it/web/campioncini/medium/{var}.png"
-            try:
                 r = requests.get(url, headers=headers, timeout=2)
                 if r.status_code == 200:
                     with open(f"foto/{clean_id}.png", 'wb') as f:
@@ -66,10 +64,6 @@ def sincronizza_foto_listone(df):
         
     bar.empty()
 
-try:
-    from st_keyup import st_keyup
-except ImportError:
-    st_keyup = None
 
 st.set_page_config(page_title="Asta Live Fantacalcio", layout="wide", page_icon="⚽")
 
@@ -146,7 +140,6 @@ def save_state():
 
 def load_state():
     if os.path.exists(get_save_file()):
-        try:
             with open(get_save_file(), 'r', encoding='utf-8') as f:
                 state = json.load(f)
                 st.session_state.squadre = state.get('squadre', [])
@@ -259,7 +252,6 @@ if st.session_state.fase == 0:
         can_spectate = False
         
         if file_esiste:
-            try:
                 with open(get_save_file(), 'r', encoding='utf-8') as f:
                     state_tmp = json.load(f)
                     saved_pw = state_tmp.get('password', '')
@@ -362,7 +354,6 @@ elif st.session_state.fase == 1:
     else:
         uploaded_file = st.file_uploader("Seleziona il CSV (Formato Ufficiale o Custom)", type=["csv"])
         if uploaded_file is not None:
-            try:
                 df_temp = pd.read_csv(uploaded_file, sep=None, engine='python', header=None)
                 header_idx = 0
                 for i in range(min(5, len(df_temp))):
@@ -432,7 +423,6 @@ elif st.session_state.fase == 2:
             spettatore_mode = True
             st.error("👀 **SEI IN MODALITÀ SPETTATORE**")
             
-        try:
             from streamlit_autorefresh import st_autorefresh
             if spettatore_mode:
                 load_state()
@@ -457,6 +447,8 @@ elif st.session_state.fase == 2:
     if df_disponibili.empty:
         st.warning("Tutti i giocatori sono stati assegnati!")
     else:
+        
+        from st_keyup import st_keyup
         st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
         col_ricerca, col_ruoli = st.columns([1, 1], vertical_alignment="bottom")
         with col_ruoli:
@@ -471,10 +463,7 @@ elif st.session_state.fase == 2:
                 ruoli_selezionati = []
         
         with col_ricerca:
-            if st_keyup:
-                ricerca_testo = st_keyup("Digita Nome o Squadra...", key="cerca_rapida")
-            else:
-                ricerca_testo = st.text_input("Cerca (premi Invio per applicare)", key="cerca_rapida")
+            ricerca_testo = st_keyup("🔍 Cerca calciatore o squadra...", key="cerca_rapida")
         st.markdown("</div>", unsafe_allow_html=True)
 
         df_filtrato = df_disponibili[df_disponibili['Ruolo'].str.upper().isin(ruoli_selezionati)]
