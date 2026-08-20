@@ -422,8 +422,7 @@ elif st.session_state.fase == 2:
     
     st.markdown("""
     <style>
-    [data-testid="stSidebarCollapsedControl"]::after,
-    [data-testid="collapsedControl"]::after {
+    button[aria-label="Expand sidebar"]::after {
         content: " 🎯 Obiettivi";
         font-weight: 800;
         color: #10b981;
@@ -431,8 +430,7 @@ elif st.session_state.fase == 2:
         font-size: 1.1rem;
         white-space: nowrap;
     }
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
+    button[aria-label="Expand sidebar"] {
         width: auto !important;
         padding-right: 15px !important;
     }
