@@ -420,12 +420,6 @@ elif st.session_state.fase == 1:
 elif st.session_state.fase == 2:
     load_state()
     
-    st.markdown("""
-    <div style="position: fixed; top: 21px; left: 55px; z-index: 99; pointer-events: none;">
-        <span style="font-weight: 800; color: #10b981; font-size: 1.1rem; letter-spacing: 0.5px; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">👈 I Miei Obiettivi</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
     with st.sidebar:
         st.header("🎯 I Miei Obiettivi")
         st.markdown("Crea la tua lista privata dei desideri. Solo tu puoi vederla.")
@@ -515,6 +509,7 @@ elif st.session_state.fase == 2:
     with col_t:
         stanza_corrente = st.session_state.get('stanza', 'Stanza')
         st.title(f"🔴 Asta Live - {stanza_corrente}")
+        st.markdown("<span style='color:#10b981; font-weight:bold;'>👈 Apri il menù laterale in alto a sinistra per creare la tua Lista Obiettivi privata!</span>", unsafe_allow_html=True)
     with col_toggle:
         st.write("")
         if is_admin:
