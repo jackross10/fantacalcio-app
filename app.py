@@ -420,6 +420,20 @@ elif st.session_state.fase == 1:
 elif st.session_state.fase == 2:
     load_state()
     
+    st.markdown("""
+    <style>
+    [data-testid="collapsedControl"]::after {
+        content: " 🎯 Obiettivi";
+        font-weight: 800;
+        color: #10b981;
+        margin-left: 8px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     with st.sidebar:
         st.header("🎯 I Miei Obiettivi")
         st.markdown("Crea la tua lista privata dei desideri. Solo tu puoi vederla.")
