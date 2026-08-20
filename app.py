@@ -421,20 +421,9 @@ elif st.session_state.fase == 2:
     load_state()
     
     st.markdown("""
-    <style>
-    button[aria-label="Expand sidebar"]::after {
-        content: " 🎯 Obiettivi";
-        font-weight: 800;
-        color: #10b981;
-        margin-left: 8px;
-        font-size: 1.1rem;
-        white-space: nowrap;
-    }
-    button[aria-label="Expand sidebar"] {
-        width: auto !important;
-        padding-right: 15px !important;
-    }
-    </style>
+    <div style="position: fixed; top: 21px; left: 55px; z-index: 99; pointer-events: none;">
+        <span style="font-weight: 800; color: #10b981; font-size: 1.1rem; letter-spacing: 0.5px; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);">👈 I Miei Obiettivi</span>
+    </div>
     """, unsafe_allow_html=True)
     
     with st.sidebar:
