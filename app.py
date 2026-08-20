@@ -477,18 +477,16 @@ elif st.session_state.fase == 2:
                 
                 ruolo_col = {'P': '#f59e0b', 'D': '#10b981', 'C': '#3b82f6', 'A': '#ef4444'}.get(ruolo, '#888')
                 
-                card_html = f"""
-                <div style="background:#1e1e1e; padding:10px; border-radius:8px; border-left: 4px solid {border_color}; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 5px;">
-                    <div style="font-weight:800; font-size:1.05rem; color:{'#666' if assegnato_a else '#fff'}; text-decoration:{'line-through' if assegnato_a else 'none'};">{player}</div>
-                    {f"<div style='font-size:0.85rem; color:#ef4444; font-weight:bold; margin-bottom: 2px;'>➔ Acquistato da {assegnato_a} ({costo_ass} cr)</div>" if assegnato_a else ""}
-                    <div style="font-size:0.75rem; color:#ccc; display:flex; gap:6px; flex-wrap:wrap; margin-top: 4px;">
-                        <span style="background:{ruolo_col}; color:#fff; padding:2px 6px; border-radius:4px; font-weight:bold;">{ruolo}</span>
-                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">{squadra}</span>
-                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">Qt: {qt}</span>
-                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">FVM: {fvm}</span>
-                    </div>
-                </div>
-                """
+                card_html = f"""<div style="background:#1e1e1e; padding:10px; border-radius:8px; border-left: 4px solid {border_color}; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 5px;">
+<div style="font-weight:800; font-size:1.05rem; color:{'#666' if assegnato_a else '#fff'}; text-decoration:{'line-through' if assegnato_a else 'none'};">{player}</div>
+{f"<div style='font-size:0.85rem; color:#ef4444; font-weight:bold; margin-bottom: 2px;'>➔ Acquistato da {assegnato_a} ({costo_ass} cr)</div>" if assegnato_a else ""}
+<div style="font-size:0.75rem; color:#ccc; display:flex; gap:6px; flex-wrap:wrap; margin-top: 4px;">
+<span style="background:{ruolo_col}; color:#fff; padding:2px 6px; border-radius:4px; font-weight:bold;">{ruolo}</span>
+<span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">{squadra}</span>
+<span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">Qt: {qt}</span>
+<span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">FVM: {fvm}</span>
+</div>
+</div>"""
                 
                 c_card, c_btn = st.columns([6, 1], vertical_alignment="center")
                 c_card.markdown(card_html, unsafe_allow_html=True)
