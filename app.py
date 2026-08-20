@@ -427,18 +427,32 @@ elif st.session_state.fase == 2:
         if 'obiettivi_privati' not in st.session_state:
             st.session_state.obiettivi_privati = []
             
-        tutti_giocatori = sorted(st.session_state.df_listone['Nome'].tolist()) if not st.session_state.df_listone.empty else []
-        
-        st.session_state.obiettivi_privati = st.multiselect(
-            "Cerca e aggiungi giocatori",
-            options=tutti_giocatori,
-            default=st.session_state.obiettivi_privati,
+        def add_wishlist():
+            val = st.session_state.get('wish_input', '')
+            if val and val != "":
+                nome_p = val.split(" - ")[0]
+                if nome_p not in st.session_state.obiettivi_privati:
+                    st.session_state.obiettivi_privati.append(nome_p)
+                st.session_state.wish_input = ""
+                
+        if 'wish_options' not in st.session_state:
+            opts = [""]
+            if not st.session_state.df_listone.empty:
+                for _, r in st.session_state.df_listone.iterrows():
+                    opts.append(f"{r['Nome']} - [{r['Ruolo']}] {r['Squadra']}")
+            st.session_state.wish_options = opts
+            
+        st.selectbox(
+            "Cerca e aggiungi giocatori", 
+            options=st.session_state.get('wish_options', [""]), 
+            key="wish_input", 
+            on_change=add_wishlist,
             placeholder="Es. Lukaku..."
         )
         
         if st.session_state.obiettivi_privati:
-            st.markdown("---")
-            for player in st.session_state.obiettivi_privati:
+            st.markdown("<hr style='margin-top:10px; margin-bottom:15px;'>", unsafe_allow_html=True)
+            for i, player in enumerate(list(st.session_state.obiettivi_privati)):
                 assegnato_a = None
                 costo_ass = 0
                 for a in st.session_state.assegnazioni:
@@ -447,7 +461,6 @@ elif st.session_state.fase == 2:
                         costo_ass = a['costo']
                         break
                 
-                # Recupera info dal df_listone
                 df = st.session_state.df_listone
                 riga_g = df[df['Nome'] == player]
                 if not riga_g.empty:
@@ -456,14 +469,32 @@ elif st.session_state.fase == 2:
                     squadra = info.get('Squadra', '')
                     qt = info.get('Quotazione', '-')
                     fvm = info.get('FVM', '-') if 'FVM' in df.columns else '-'
-                    info_str = f"[{ruolo}] {squadra} • Qt: {qt} • FVM: {fvm}"
                 else:
-                    info_str = "Info non disponibili"
+                    ruolo, squadra, qt, fvm = "?", "?", "-", "-"
                 
-                if assegnato_a:
-                    st.markdown(f"<div style='margin-bottom:8px;'><del><b>{player}</b></del> ➔ <b>{assegnato_a}</b> ({costo_ass} cr)<br><span style='font-size:0.8em; color:#888;'>{info_str}</span></div>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<div style='margin-bottom:8px;'>🟢 <b>{player}</b><br><span style='font-size:0.8em; color:#bbb;'>{info_str}</span></div>", unsafe_allow_html=True)
+                border_color = "#3b82f6"
+                if assegnato_a: border_color = "#ef4444"
+                
+                ruolo_col = {'P': '#f59e0b', 'D': '#10b981', 'C': '#3b82f6', 'A': '#ef4444'}.get(ruolo, '#888')
+                
+                card_html = f"""
+                <div style="background:#1e1e1e; padding:10px; border-radius:8px; border-left: 4px solid {border_color}; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 5px;">
+                    <div style="font-weight:800; font-size:1.05rem; color:{'#666' if assegnato_a else '#fff'}; text-decoration:{'line-through' if assegnato_a else 'none'};">{player}</div>
+                    {f"<div style='font-size:0.85rem; color:#ef4444; font-weight:bold; margin-bottom: 2px;'>➔ Acquistato da {assegnato_a} ({costo_ass} cr)</div>" if assegnato_a else ""}
+                    <div style="font-size:0.75rem; color:#ccc; display:flex; gap:6px; flex-wrap:wrap; margin-top: 4px;">
+                        <span style="background:{ruolo_col}; color:#fff; padding:2px 6px; border-radius:4px; font-weight:bold;">{ruolo}</span>
+                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">{squadra}</span>
+                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">Qt: {qt}</span>
+                        <span style="background:#2d2d2d; border: 1px solid #444; padding:2px 6px; border-radius:4px;">FVM: {fvm}</span>
+                    </div>
+                </div>
+                """
+                
+                c_card, c_btn = st.columns([6, 1], vertical_alignment="center")
+                c_card.markdown(card_html, unsafe_allow_html=True)
+                if c_btn.button("✖", key=f"del_wish_{i}_{player}", help="Rimuovi"):
+                    st.session_state.obiettivi_privati.remove(player)
+                    st.rerun()
     
     c_b1, c_b2, _ = st.columns([1, 1, 3])
     if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
