@@ -419,6 +419,38 @@ elif st.session_state.fase == 1:
 elif st.session_state.fase == 2:
     load_state()
     
+    with st.sidebar:
+        st.header("🎯 I Miei Obiettivi")
+        st.markdown("Crea la tua lista privata dei desideri. Solo tu puoi vederla.")
+        
+        if 'obiettivi_privati' not in st.session_state:
+            st.session_state.obiettivi_privati = []
+            
+        tutti_giocatori = sorted(st.session_state.df_listone['Nome'].tolist()) if not st.session_state.df_listone.empty else []
+        
+        st.session_state.obiettivi_privati = st.multiselect(
+            "Cerca e aggiungi giocatori",
+            options=tutti_giocatori,
+            default=st.session_state.obiettivi_privati,
+            placeholder="Es. Lukaku..."
+        )
+        
+        if st.session_state.obiettivi_privati:
+            st.markdown("---")
+            for player in st.session_state.obiettivi_privati:
+                assegnato_a = None
+                costo_ass = 0
+                for a in st.session_state.assegnazioni:
+                    if a['giocatore'] == player:
+                        assegnato_a = a['squadra']
+                        costo_ass = a['costo']
+                        break
+                
+                if assegnato_a:
+                    st.markdown(f"~~{player}~~ ➔ **{assegnato_a}** ({costo_ass} cr)")
+                else:
+                    st.markdown(f"🟢 **{player}** (Disponibile)")
+    
     c_b1, c_b2, _ = st.columns([1, 1, 3])
     if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
         st.session_state.fase = 0
