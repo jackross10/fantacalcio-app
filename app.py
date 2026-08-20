@@ -422,14 +422,19 @@ elif st.session_state.fase == 2:
     
     st.markdown("""
     <style>
+    [data-testid="stSidebarCollapsedControl"]::after,
     [data-testid="collapsedControl"]::after {
         content: " 🎯 Obiettivi";
         font-weight: 800;
         color: #10b981;
         margin-left: 8px;
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
+        font-size: 1.1rem;
+        white-space: nowrap;
+    }
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        width: auto !important;
+        padding-right: 15px !important;
     }
     </style>
     """, unsafe_allow_html=True)
