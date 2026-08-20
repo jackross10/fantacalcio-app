@@ -351,7 +351,8 @@ elif st.session_state.fase == 1:
     st.session_state.config_ruoli['A'] = c5.number_input("Attaccanti (A)", min_value=1, value=st.session_state.config_ruoli['A'])
 
     st.header("2. Squadre Partecipanti")
-    st.text_input("Aggiungi Nome Squadra e premi Invio", placeholder="Es. CacoSbocco", key="squadra_input", on_change=add_squadra)
+    st.info("⚠️ Inserisci **almeno 2 squadre** per poter avviare l'asta.")
+    st.text_input("Aggiungi Nome Squadra e premi Invio", placeholder="Es. Real Madrid", key="squadra_input", on_change=add_squadra)
             
     if st.session_state.squadre:
         st.write("**Squadre aggiunte:**")
@@ -446,10 +447,23 @@ elif st.session_state.fase == 2:
                         costo_ass = a['costo']
                         break
                 
-                if assegnato_a:
-                    st.markdown(f"~~{player}~~ ➔ **{assegnato_a}** ({costo_ass} cr)")
+                # Recupera info dal df_listone
+                df = st.session_state.df_listone
+                riga_g = df[df['Nome'] == player]
+                if not riga_g.empty:
+                    info = riga_g.iloc[0]
+                    ruolo = info.get('Ruolo', '')
+                    squadra = info.get('Squadra', '')
+                    qt = info.get('Quotazione', '-')
+                    fvm = info.get('FVM', '-') if 'FVM' in df.columns else '-'
+                    info_str = f"[{ruolo}] {squadra} • Qt: {qt} • FVM: {fvm}"
                 else:
-                    st.markdown(f"🟢 **{player}** (Disponibile)")
+                    info_str = "Info non disponibili"
+                
+                if assegnato_a:
+                    st.markdown(f"<div style='margin-bottom:8px;'><del><b>{player}</b></del> ➔ <b>{assegnato_a}</b> ({costo_ass} cr)<br><span style='font-size:0.8em; color:#888;'>{info_str}</span></div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div style='margin-bottom:8px;'>🟢 <b>{player}</b><br><span style='font-size:0.8em; color:#bbb;'>{info_str}</span></div>", unsafe_allow_html=True)
     
     c_b1, c_b2, _ = st.columns([1, 1, 3])
     if c_b1.button("🚪 Torna alla Hall", use_container_width=True):
